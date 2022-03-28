@@ -1,3 +1,4 @@
+import inspect
 import os.path
 import subprocess
 import sys
@@ -24,6 +25,7 @@ class SlurmFunction:
         return self.func(*args, **kwargs)
 
     def _serialize_args(self, *args, **kwargs):
+        inspect.signature(self.func).bind(*args, **kwargs)
         data = {"args": args, "kwargs": kwargs}
         serialized = json.dumps(data)
         if len(serialized) > 300:

@@ -11,4 +11,4 @@ def test(hello_world):
 
 
 if __name__ == "__main__":
-    test.local(f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    test.distribute(f"Hello World from slurminade! {str(datetime.datetime.now())}")
