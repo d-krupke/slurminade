@@ -2,7 +2,7 @@ import os.path
 import sys
 import json
 import simple_slurm
-from .execute import guard_recursive_distribution
+from .guard import guard_recursive_distribution
 from .conf import _get_conf
 
 

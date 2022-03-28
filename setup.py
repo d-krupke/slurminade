@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='slurminade',
-      version='0.1.3',
+      version='0.1.4',
       description='A decorator-based slurm runner',
       long_description=readme(),
       long_description_content_type="text/markdown",
