@@ -29,3 +29,8 @@ if __name__ == "__main__":
     # Call the function remotely.
     test.distribute(f"Hello World from slurminade! {str(datetime.datetime.now())}")
 ```
+
+## Debugging
+
+You can use `.local` instead of `.distribute` to run the task on the local computer, 
+without slurm. You will see all output.

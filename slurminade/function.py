@@ -1,4 +1,5 @@
 import os.path
+import subprocess
 import sys
 import json
 import simple_slurm
@@ -30,8 +31,7 @@ class SlurmFunction:
                   f"arguments ({len(serialized)}. This can be bad.")
         return serialized
 
-    def distribute(self, *args, **kwargs):
-        guard_recursive_distribution()
+    def _get_command(self, *args, **kwargs):
         import __main__
         mainf = __main__.__file__
         if not os.path.isfile(mainf) or not mainf.endswith(".py"):
@@ -39,7 +39,22 @@ class SlurmFunction:
 
         argd = self._serialize_args(*args, **kwargs)
         slurm_task = f"{sys.executable} -m slurminade.execute {mainf} {self.fname} '{argd}'"
+        return slurm_task
+
+    def distribute(self, *args, **kwargs):
+        guard_recursive_distribution()
+        slurm_task = self._get_command(*args, **kwargs)
         self.slurm.sbatch(slurm_task)
+
+    def local(self, *args, **kwargs):
+        """
+        This function simulates a distribution but runs on the local computer.
+        Great for debugging.
+        """
+        slurm_task = self._get_command(*args, **kwargs)
+        process = subprocess.Popen(slurm_task, shell=True)
+        process.wait()
+
 
     @staticmethod
     def call(func_id, argj):
