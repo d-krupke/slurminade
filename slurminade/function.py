@@ -2,6 +2,7 @@ import os.path
 import sys
 import json
 import simple_slurm
+from .execute import guard_recursive_distribution
 from .conf import _get_conf
 
 
@@ -30,6 +31,7 @@ class SlurmFunction:
         return serialized
 
     def distribute(self, *args, **kwargs):
+        guard_recursive_distribution()
         import __main__
         mainf = __main__.__file__
         if not os.path.isfile(mainf) or not mainf.endswith(".py"):
