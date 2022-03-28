@@ -18,7 +18,7 @@ slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 
 @slurminade.slurmify()
 def test(file_name, text):
-    with open("slurminade_example.txt", "w") as f:
+    with open(file_name, "w") as f:
         f.write(hello_world)
 
 # Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
@@ -45,11 +45,11 @@ You can install *slurminade* with `pip install slurminade`.
 ## Usage
 
 You can set task specific slurm arguments within the decorator, e.g., `@slurminade.slurmify(constraint="alggen03")`.
-This arguments are directly passed to *simple_slurm*, such that all its arguments are supported.
+These arguments are directly passed to *simple_slurm*, such that all its arguments are supported.
 
 In order for *slurminade* to work, the code needs to be in a Python file/project shared by all slurm-nodes.
 Otherwise, *slurminade* will not find the corresponding function.
-The function must also be on the top level of Python such that it is available after a simple `import` of the main-file.
+The slurmified functions also must be importable, i.e., on the top level.
 Currently, all function names must be unique as *slurminade* will only transmit the function's name.
 
 ## Debugging
