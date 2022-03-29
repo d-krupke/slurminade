@@ -57,7 +57,6 @@ class SlurmFunction:
         process = subprocess.Popen(slurm_task, shell=True)
         process.wait()
 
-
     @staticmethod
     def call(func_id, argj):
         argd = json.loads(argj)
@@ -72,3 +71,38 @@ def slurmify(f=None, **args):
             return SlurmFunction(args, func)
 
         return dec
+
+
+def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+    """
+    Just calling simple_slurm's srun but with default parameters of slurminade.
+    `srun` executes the command on a slurm node but waits for the return.
+    :param command: The command to be executed.
+    :param conf: Slurm configuration changes just for this command.
+    :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
+    :return: The return of `simple_slurm.srun`.
+    """
+    conf = _get_conf(conf)
+    slurm = simple_slurm.Slurm(**conf)
+    if simple_slurm_kwargs:
+        return slurm.srun(command, **simple_slurm_kwargs)
+    else:
+        return slurm.srun(command)
+
+
+def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+    """
+    Just calling simple_slurm's sbatch but with default parameters of slurminade.
+    `sbatch` executes the command on a slurm node and returns directly.
+    :param command: The command to be executed.
+    :param conf: Slurm configuration changes just for this command.
+    :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
+    :return: The return of `simple_slurm.sbatch`.
+    """
+    conf = _get_conf(conf)
+    slurm = simple_slurm.Slurm(**conf)
+    slurm.sbatch(command, )
+    if simple_slurm_kwargs:
+        return slurm.sbatch(command, **simple_slurm_kwargs)
+    else:
+        return slurm.sbatch(command)

@@ -6,6 +6,10 @@ A function decorated with `@slurminade.slurmify(partition="alg")` will automatic
 The general idea is that the corresponding Python-code exists on both machines, thus, the slurm-node can also call the functions of the original code if you tell if which one and what arguments to use.
 This is similar to [celery](https://github.com/celery/celery) but you do not need to install anything, just make sure the same Python-environment is available the nodes (usually the case in a proper slurm setup).
 
+Please check the documentation of [simple_slurm](https://github.com/amq92/simple_slurm) to get to know more about the
+possible parameters. You can also call simple_slurm directly by `srun` and `sbatch` (automatically with the 
+configuration specified with slurminade).
+
 A simple script that executes a function three times on slurm-nodes could look like this:
 ```python
 
@@ -19,7 +23,7 @@ slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 @slurminade.slurmify()
 def test(file_name, text):
     with open(file_name, "w") as f:
-        f.write(hello_world)
+        f.write(text)
 
 # Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
 if __name__ == "__main__":
@@ -51,6 +55,95 @@ In order for *slurminade* to work, the code needs to be in a Python file/project
 Otherwise, *slurminade* will not find the corresponding function.
 The slurmified functions also must be importable, i.e., on the top level.
 Currently, all function names must be unique as *slurminade* will only transmit the function's name.
+
+## Don't do:
+
+### Bad: System calls
+```python
+import slurminade
+import os
+@slurminade.slurmify()
+def run_shell_command():
+    os.system("complex call")
+    # BAD! The system call will run outside of slurm! The slurm task directly terminates.
+```
+instead use
+```python
+import slurminade
+
+if __name__=="__main__":
+    slurminade.sbatch("complex call")  # forwards your call to simple_slurm that is better used for such things.
+```
+
+### Bad: Global variables
+
+```python
+import slurminade
+
+FLAG = True
+
+@slurminade.slurmify()
+def bad_global(args):
+    if FLAG:  # BAD! Will be True because the __main__ Part is not executed on the node.
+        pass
+    else:
+        pass
+
+# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
+if __name__ == "__main__":
+    FLAG = False
+    bad_global.distribute("args")
+```
+instead do
+```python
+import slurminade
+@slurminade.slurmify()
+def bad_global(args, FLAG):  # Now the flag is passed correctly as an argument. Note that only json-compatible arguments are possible.
+    if FLAG: 
+        pass
+    else:
+        pass
+
+# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
+if __name__ == "__main__":
+    FLAG = False
+    bad_global.distribute("args", FLAG)
+```
+> :warning The same is true for any global state such as file or database connections.
+
+### Error: Complex objects as arguments
+
+```python
+import slurminade
+
+@slurminade.slurmify()
+def sec_order_func(func):  
+    func()  
+    
+def f():
+    print("hello")
+    
+def g():
+    print("world!")
+    
+if __name__=="__main__":
+    sec_order_func.distribute(f)  # will throw an exception 
+    sec_order_func.distribute(g)
+```
+Instead, create individual slurmified functions for each call or pass a simple identifier that lets the function
+deduce, what to do, e.g., a switch-case.
+If you really need to pass complex objects, you could also pickle the object and only pass the file name.
+
+## Default configuration
+
+You can set up a default configuration in `~/slurminade_default.json`.
+This should simply be a dictionary of arguments for *simple_slurm*.
+For example
+```json
+{
+  "partition": "alg"
+}
+```
 
 ## Debugging
 
