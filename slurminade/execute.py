@@ -11,8 +11,11 @@ def main():
     args = sys.argv[3]
     with open(batchfile, "r") as f:
         code = "".join(f.readlines())
+
+        # Workaround as otherwise __name__ is not defined
         global __name__
         __name__ = None
+
         exec(code, globals())
     SlurmFunction.call(funcid, args)
 
