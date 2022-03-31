@@ -48,7 +48,7 @@ class SlurmFunction:
     def _get_command_with_quotes(self, *args, **kwargs):
         cmd_list = self._get_command_list(*args, **kwargs)
         # Quote the json arguments because sbatch cannot take a list.
-        cmd_s = " ".join(cmd_list[:-1])+f" {shlex.quote(cmd_list[-1])}"
+        cmd_s = " ".join(cmd_list[:-1]) + f" {shlex.quote(cmd_list[-1])}"
         return cmd_s
 
     def distribute(self, *args, **kwargs):
@@ -88,7 +88,7 @@ def slurmify(f=None, **args):
         return dec
 
 
-def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def force_srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
     """
     Just calling simple_slurm's srun but with default parameters of slurminade.
     `srun` executes the command on a slurm node but waits for the return.
@@ -105,7 +105,25 @@ def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
         return slurm.srun(command)
 
 
-def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+    """
+    Just calling simple_slurm's srun but with default parameters of slurminade.
+    `srun` executes the command on a slurm node but waits for the return.
+    If slurm is not available, the command will be executed locally.
+    :param command: The command to be executed.
+    :param conf: Slurm configuration changes just for this command.
+    :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
+    :return: The return of `simple_slurm.srun`.
+    """
+    if shutil.which("srun"):
+        force_srun(command, conf, simple_slurm_kwargs)
+    else:
+        print("SRUN is not available. Running code locally. "
+              "If you do not want this, use `force_srun'.")
+        subprocess.run(command, check=True)
+
+
+def force_sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
     """
     Just calling simple_slurm's sbatch but with default parameters of slurminade.
     `sbatch` executes the command on a slurm node and returns directly.
@@ -121,3 +139,21 @@ def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
         return slurm.sbatch(command, **simple_slurm_kwargs)
     else:
         return slurm.sbatch(command)
+
+
+def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+    """
+    Just calling simple_slurm's sbatch but with default parameters of slurminade.
+    `sbatch` executes the command on a slurm node and returns directly.
+    If slurm is not available, the command will be executed locally.
+    :param command: The command to be executed.
+    :param conf: Slurm configuration changes just for this command.
+    :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
+    :return: The return of `simple_slurm.sbatch`.
+    """
+    if shutil.which("sbatch"):
+        force_srun(command, conf, simple_slurm_kwargs)
+    else:
+        print("sbatch is not available. Running code locally. "
+              "If you do not want this, use `force_sbatch'.")
+        subprocess.run(command, check=True)

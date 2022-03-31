@@ -42,7 +42,8 @@ The code is super simple and open source, don't be afraid to create a fork that 
 
 If slurm is not available, `distribute` results in a local function call.
 To enforce a distribution to a slurm node, use `force_distribute`.
-Currently, `srun` and `sbatch` will still fail without a *slurm* environment.
+Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
+*simple_slurm*).
 
 ## Installation
 
