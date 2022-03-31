@@ -40,6 +40,10 @@ We have not tested it with other virtual environments.
 
 The code is super simple and open source, don't be afraid to create a fork that fits your own needs.
 
+If slurm is not available, `distribute` results in a local function call.
+To enforce a distribution to a slurm node, use `force_distribute`.
+Currently, `srun` and `sbatch` will still fail without a *slurm* environment.
+
 ## Installation
 
 You can install *slurminade* with `pip install slurminade`.

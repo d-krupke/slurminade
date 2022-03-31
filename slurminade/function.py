@@ -1,6 +1,7 @@
 import inspect
 import os.path
 import shlex
+import shutil
 import subprocess
 import sys
 import json
@@ -51,6 +52,14 @@ class SlurmFunction:
         return cmd_s
 
     def distribute(self, *args, **kwargs):
+        if shutil.which("sbatch"):
+            self.force_distribute(*args, **kwargs)
+        else:
+            print("SBATCH is not available. Running code locally. "
+                  "If you do not want this, use `force_distribute'.")
+            self(*args, **kwargs)
+
+    def force_distribute(self, *args, **kwargs):
         guard_recursive_distribution()
         slurm_task = self._get_command_with_quotes(*args, **kwargs)
         self.slurm.sbatch(" ".join(slurm_task))
