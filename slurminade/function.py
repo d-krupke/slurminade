@@ -62,7 +62,7 @@ class SlurmFunction:
     def force_distribute(self, *args, **kwargs):
         guard_recursive_distribution()
         slurm_task = self._get_command_with_quotes(*args, **kwargs)
-        self.slurm.sbatch(" ".join(slurm_task))
+        self.slurm.sbatch(slurm_task)
 
     def local(self, *args, **kwargs):
         """
