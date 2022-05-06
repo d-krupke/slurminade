@@ -6,7 +6,6 @@ import subprocess
 import sys
 import json
 import simple_slurm
-import inspect
 from .guard import guard_recursive_distribution
 from .conf import _get_conf
 
