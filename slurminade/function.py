@@ -6,6 +6,7 @@ import subprocess
 import sys
 import json
 import simple_slurm
+import inspect
 from .guard import guard_recursive_distribution
 from .conf import _get_conf
 
@@ -19,6 +20,7 @@ class SlurmFunction:
         self.slurm = simple_slurm.Slurm(**conf)
         self.fname = func.__name__
         self.func = func
+        self.ffile = inspect.getfile(func)
         if func.__name__ in self.function_map:
             raise RuntimeError("Slurminade functions must have unique names!")
         self.function_map[func.__name__] = func
@@ -36,13 +38,11 @@ class SlurmFunction:
         return serialized
 
     def _get_command_list(self, *args, **kwargs):
-        import __main__
-        mainf = __main__.__file__
-        if not os.path.isfile(mainf) or not mainf.endswith(".py"):
+        if not os.path.isfile(self.ffile) or not self.ffile.endswith(".py"):
             raise RuntimeError("Cannot reproduce function call from command line.")
 
         argd = self._serialize_args(*args, **kwargs)
-        slurm_task = [sys.executable, "-m", "slurminade.execute", mainf, self.fname, argd]
+        slurm_task = [sys.executable, "-m", "slurminade.execute", self.ffile, self.fname, argd]
         return slurm_task
 
     def _get_command_with_quotes(self, *args, **kwargs):
