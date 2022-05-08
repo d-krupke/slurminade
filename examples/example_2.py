@@ -2,7 +2,7 @@ import slurminade
 import datetime
 
 # example with importing a function to be executed by node
-from examples.example_2b import f
+from example_2b import f
 
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 
@@ -15,4 +15,5 @@ def test(hello_world):
 
 
 if __name__ == "__main__":
-    test.distribute(f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    f.local("test f")
+    test.local(f"Hello World from slurminade! {str(datetime.datetime.now())}")
