@@ -141,7 +141,7 @@ If you really need to pass complex objects, you could also pickle the object and
 
 ## Default configuration
 
-You can set up a default configuration in `~/slurminade_default.json`.
+You can set up a default configuration in `~/.slurminade_default.json`.
 This should simply be a dictionary of arguments for *simple_slurm*.
 For example
 ```json
