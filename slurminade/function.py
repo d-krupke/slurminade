@@ -13,20 +13,18 @@ from .conf import _get_conf
 class SlurmFunction:
     dispatcher = Dispatcher()
     function_map = {}
-    entry_point = None
+    _entry_point = None  # needed to save the entry point at the slurm node.
 
     @staticmethod
     def set_entry_point(entry_point: str) -> None:
         """
         This function usually is not necessary for endusers.
         Set a manual entry point. This can allow you to use slurmify from the interactive
-        interpreter. It is also necessary, for slurmindae in the slurm node, because
-        the entry point will be executed not by file but by exec(file_content).
+        interpreter.
         :param entry_point: A path to the entry point file.
         :return: None
         """
         SlurmFunction.dispatcher.set_default_entry_point(entry_point)
-        SlurmFunction.entry_point = entry_point
 
     def __init__(self, special_slurm_opts, func):
         if (
@@ -46,7 +44,8 @@ class SlurmFunction:
         file = inspect.getfile(func)
         if file == "<string>":  # on the slurm node, the functions in the entry point
             # are named `<string>`.
-            file = self.entry_point
+            assert self._entry_point
+            file = self._entry_point
         path = os.path.normpath(os.path.abspath(file))
         return f"{path}:{func.__name__}"
 
@@ -119,7 +118,6 @@ def slurmify(f=None, **args):
     """
 
     if f:  # use default parameters
-
         return SlurmFunction({}, f)
     else:
 

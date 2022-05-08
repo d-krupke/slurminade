@@ -5,7 +5,7 @@ anything of this file yourself.
 
 import sys
 
-from slurminade.guard import prevent_distribution
+from .guard import prevent_distribution
 from .function import SlurmFunction
 
 
@@ -16,7 +16,7 @@ def main():
     funcid = sys.argv[2]  # the function to be called
     args = sys.argv[3]  # the arguments to call the function with
     # Load the code
-    SlurmFunction.set_entry_point(batch_file)
+    SlurmFunction._entry_point = batch_file
     with open(batch_file, "r") as f:
         code = "".join(f.readlines())
 
