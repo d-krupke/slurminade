@@ -1,0 +1,2 @@
+simple-slurm>=0.2.3
+setuptools~=58.0.4
