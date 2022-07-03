@@ -12,6 +12,7 @@ import typing
 import simple_slurm
 
 from slurminade.conf import _get_conf
+from slurminade.guard import dispatch_guard
 
 
 class _FunctionCall:
@@ -35,6 +36,7 @@ class _FunctionCall:
         return serialized
 
 
+
 class Dispatcher:
     """
     The dispatcher will dispatch a function call either to slurm or to a local process.
@@ -42,6 +44,7 @@ class Dispatcher:
 
     def __init__(self):
         self._main_file = None
+
 
     def _init_main_file(self):
         if not self._main_file:
@@ -120,6 +123,7 @@ class Dispatcher:
         find the desired function definition.
         :return: None
         """
+        dispatch_guard()
         entry_file_path = self._select_entry_point(entry_file_path)
         slurm = self._create_slurm_api(special_slurm_opts)
         slurm.sbatch(

@@ -17,6 +17,7 @@ import slurminade
 import datetime
 
 # Settings for slurm
+slurminade.set_dispatch_limit(10)  # only allow 10 dispatches as a safety measure.
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 
 
@@ -48,8 +49,6 @@ Analogous for `srun` and `sbatch` (giving some extra value on top of just forwar
 ## Installation
 
 You can install *slurminade* with `pip install slurminade`.
-
-> :warning: *slurminade* is still under development. I tested it only for some simple use cases. Please expect some bugs.
 
 ## Usage
 
