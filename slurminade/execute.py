@@ -24,7 +24,9 @@ def main():
         global __name__
         __name__ = None
 
-        exec(code, globals())
+        glob = dict(globals())
+        glob["__file__"] = batch_file
+        exec(code, glob)
     # Execute the function
     SlurmFunction.call(funcid, args)
 
