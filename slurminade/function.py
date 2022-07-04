@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import json
 import os
+import typing
+
 import simple_slurm
 
 from .dispatcher import Dispatcher, _FunctionCall
@@ -26,7 +28,7 @@ class SlurmFunction:
         """
         SlurmFunction.dispatcher.set_default_entry_point(entry_point)
 
-    def __init__(self, special_slurm_opts, func):
+    def __init__(self, special_slurm_opts: typing.Dict, func: typing.Callable):
         if (
             not func.__name__
             or func.__name__ == "<lambda>"
@@ -98,9 +100,8 @@ class SlurmFunction:
         )
 
     @staticmethod
-    def call(func_id, argj):
-        argd = json.loads(argj)
-        SlurmFunction.function_map[func_id](*argd["args"], **argd["kwargs"])
+    def call(func_id, *args, **kwargs):
+        SlurmFunction.function_map[func_id](*args, **kwargs)
 
 
 def slurmify(f=None, **args):
@@ -121,7 +122,7 @@ def slurmify(f=None, **args):
         return SlurmFunction({}, f)
     else:
 
-        def dec(func):
+        def dec(func) -> SlurmFunction:
             return SlurmFunction(args, func)
 
         return dec

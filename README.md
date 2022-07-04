@@ -32,6 +32,12 @@ if __name__ == "__main__":
     test.distribute("slurminade_test_1.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
     test.distribute("slurminade_test_2.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
     test.distribute("slurminade_test_3.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    
+    # automatically batch a number of tasks. This is useful, if you have many
+    # short tasks, which would be inefficient as separate tasks.
+    with slurminade.AutoBatch(max_batch_size=10) as batch:
+        batch.add(test, "slurminade_test_4a.txt", "Hello!")
+        batch.add(test, "slurminade_test_4b.txt", "Hello!")
 ```
 
 > :warning: You should not use this to spam your slurm environment with tasks. Only distribute a function call if it takes at least a few seconds, otherwise it will be faster to run it locally.

@@ -35,6 +35,8 @@ class _FunctionCall:
             )
         return serialized
 
+    def as_json(self):
+        return {"func_id": self.func_id, "args": self.args, "kwargs": self.kwargs}
 
 
 class Dispatcher:
@@ -44,7 +46,6 @@ class Dispatcher:
 
     def __init__(self):
         self._main_file = None
-
 
     def _init_main_file(self):
         if not self._main_file:
@@ -131,6 +132,30 @@ class Dispatcher:
             f" {entry_file_path}"
             f" {func_call.func_id}"
             f" {shlex.quote(func_call.get_arguments_as_json_string())}"
+        )
+
+    def dispatch_batch_to_slurm(
+        self,
+        func_calls: typing.List[_FunctionCall],
+        special_slurm_opts: typing.Dict,
+        entry_file_path: typing.Optional[str] = None,
+    ):
+        """
+        Dispatch a batch of function calls to slurm.
+        :param func_calls: The function calls to execute on a slurm node.
+        :param special_slurm_opts: Special options for slurm.
+        :param entry_file_path: An optional entry point that allows the slurm node to
+        find the desired function definition.
+        :return: None
+        """
+        dispatch_guard()
+        entry_file_path = self._select_entry_point(entry_file_path)
+        slurm = self._create_slurm_api(special_slurm_opts)
+        slurm.sbatch(
+            f"{sys.executable} -m slurminade.execute"
+            f" {entry_file_path}"
+            f" __BATCH__"
+            f" {shlex.quote(json.dumps([f.as_json() for f in func_calls]))}"
         )
 
     def has_main_file(self) -> bool:

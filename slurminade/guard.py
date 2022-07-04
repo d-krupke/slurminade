@@ -21,9 +21,11 @@ class TooManyDispatchesError(RuntimeError):
         self.n_calls = n_calls
 
     def __str__(self):
-        return f"Exceeded the dispatch limit of {self.n_calls} calls. " \
-               f"This limit has been introduced to prevent you from spamming your " \
-               f"slurm environment in case of a bug. You can increase it "
+        return (
+            f"Exceeded the dispatch limit of {self.n_calls} calls. "
+            f"This limit has been introduced to prevent you from spamming your "
+            f"slurm environment in case of a bug. You can increase it "
+        )
 
 
 class _DispatchGuard:

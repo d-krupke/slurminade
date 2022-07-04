@@ -1,6 +1,8 @@
 import slurminade
 import datetime
 
+from slurminade import AutoBatch
+
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 
 
@@ -13,3 +15,6 @@ def test(hello_world):
 
 if __name__ == "__main__":
     test.local(f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    with AutoBatch() as batch:
+        batch.add(test, "hello 1!")
+        batch.add(test, "hello 2!")

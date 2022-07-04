@@ -7,6 +7,7 @@ import sys
 
 from .guard import prevent_distribution
 from .function import SlurmFunction
+import json
 
 
 def main():
@@ -28,7 +29,17 @@ def main():
         glob["__file__"] = batch_file
         exec(code, glob)
     # Execute the function
-    SlurmFunction.call(funcid, args)
+    if funcid == "__BATCH__":
+        # if it is a batch, call the list of functions.
+        argd = json.loads(args)
+        assert isinstance(argd, list), "Should be a list of dicts"
+        for fc in argd:
+            SlurmFunction.call(
+                fc["func_id"], *fc.get("args", []), **fc.get("kwargs", {})
+            )
+    else:
+        argd = json.loads(args)
+        SlurmFunction.call(funcid, *argd.get("args", []), **argd.get("kwargs", {}))
 
 
 if __name__ == "__main__":
