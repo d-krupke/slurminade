@@ -68,9 +68,9 @@ class AutoBatch:
             sfunc: SlurmFunction
             dep = sfunc.special_slurm_opts.get("dependency", "")
             if dep:
-                dep += ",afterany:" + ":".join(job_ids)
+                dep += ",afterany:" + ":".join(str(j) for j in job_ids)
             else:
-                dep = "afterany:" + ":".join(job_ids)
+                dep = "afterany:" + ":".join(str(j) for j in job_ids)
             SlurmFunction.dispatcher.dispatch_to_slurm(
                 _FunctionCall(sfunc.func_id, args, kwargs), {"dependency": dep})
 
