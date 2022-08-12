@@ -14,13 +14,14 @@ A simple script that executes a function three times on slurm-nodes could look l
 ```python
 import slurminade
 
-slurminade.update_default_configuration(partition="alg")  # global options
+slurminade.update_default_configuration(partition="alg")  # global options for slurm
 
 # If no slurm environment is found, the functions are called directly to make scripts
 # compatible with any environment.
 # You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
-@slurminade.slurmify(constraint="alggen02")  # function specific options
+# use this decorator to make a function distributable with slurm
+@slurminade.slurmify(constraint="alggen02")  # function specific options can be specified
 def prepare():
     print("Prepare")
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     jid = prepare.distribute()
 
     with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
-        # run 10x f after prepare has finished
+        # run 100x f after `prepare` has finished
         for i in range(100):
             f.wait_for(jid).distribute(i)
 
@@ -54,7 +55,6 @@ We have not tested it with other virtual environments.
 The code is super simple and open source, don't be afraid to create a fork that fits your own needs.
 
 If slurm is not available, `distribute` results in a local function call.
-To enforce a distribution to a slurm node, use `force_distribute`.
 Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
 *simple_slurm*).
 
@@ -162,8 +162,20 @@ For example
 
 ## Debugging
 
-You can use `.local` instead of `.distribute` to run the task on the local computer, 
-without slurm. If there is a bug, you will directly see it in the output (at least for most bugs).
+You can use
+```python
+import slurminade
+
+slurminade.set_dispatcher(slurminade.TestDispatcher())
+```
+to see the serialization or
+```python
+import slurminade
+slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
+```
+to distribute the tasks without slurm using subprocesses.
+
+If there is a bug, you will directly see it in the output (at least for most bugs).
 
 
 ## Changes
