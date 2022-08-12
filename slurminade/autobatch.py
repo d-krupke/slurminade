@@ -28,6 +28,7 @@ class AutoBatch:
     def __init__(self, max_batch_size: typing.Optional[int] = None):
         self.max_batch_size = max_batch_size
         self._tasks = defaultdict(list)
+        self._on_completion = []
 
     def add(self, func: SlurmFunction, *args, **kwargs) -> None:
         """
@@ -46,6 +47,9 @@ class AutoBatch:
         conf = _get_conf(dict(func.special_slurm_opts))
         self._tasks[HashableDict(conf)].append(call)
 
+    def on_completion(self, func: SlurmFunction, *args, **kwargs) -> None:
+        self._on_completion.append((func, args, kwargs))
+
     def __enter__(self):
         return self
 
@@ -59,6 +63,39 @@ class AutoBatch:
                 SlurmFunction.call(call.func_id, *call.args, **call.kwargs)
         self._tasks.clear()
 
+    def _add_on_completion_tasks(self, job_ids):
+        for sfunc, args, kwargs in self._on_completion:
+            sfunc: SlurmFunction
+            dep = sfunc.special_slurm_opts.get("dependency", "")
+            if dep:
+                dep += ",afterany:" + ":".join(job_ids)
+            else:
+                dep = "afterany:" + ":".join(job_ids)
+            SlurmFunction.dispatcher.dispatch_to_slurm(
+                _FunctionCall(sfunc.func_id, args, kwargs), {"dependency": dep})
+
+    def distribute(self) -> typing.List[int]:
+        """
+        Distributes the tasks.
+        :return: An array with the job ids.
+        """
+        job_ids = []
+        if self.max_batch_size is None:
+            for conf, calls in self._tasks.items():
+                jid = SlurmFunction.dispatcher.dispatch_batch_to_slurm(calls, conf)
+                job_ids.append(jid)
+        else:
+            for conf, calls in self._tasks.items():
+                while calls:
+                    jid = SlurmFunction.dispatcher.dispatch_batch_to_slurm(
+                        calls[: self.max_batch_size], conf
+                    )
+                    job_ids.append(jid)
+                    calls = calls[self.max_batch_size:]
+        self._tasks.clear()
+        self._add_on_completion_tasks(job_ids)
+        return job_ids
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
             print("Aborted due to exception.")
@@ -67,14 +104,4 @@ class AutoBatch:
             print("No Slurm environment available. Running batch locally.")
             self.run_locally()
         else:
-            if self.max_batch_size is None:
-                for conf, calls in self._tasks.items():
-                    SlurmFunction.dispatcher.dispatch_batch_to_slurm(calls, conf)
-            else:
-                for conf, calls in self._tasks.items():
-                    while calls:
-                        SlurmFunction.dispatcher.dispatch_batch_to_slurm(
-                            calls[: self.max_batch_size], conf
-                        )
-                        calls = calls[self.max_batch_size :]
-        self._tasks.clear()
+            self.distribute()

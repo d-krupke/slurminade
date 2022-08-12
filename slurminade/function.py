@@ -104,7 +104,7 @@ class SlurmFunction:
         SlurmFunction.function_map[func_id](*args, **kwargs)
 
 
-def slurmify(f=None, **args):
+def slurmify(f=None, **args) -> typing.Callable[[typing.Callable], SlurmFunction]:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -128,14 +128,14 @@ def slurmify(f=None, **args):
         return dec
 
 
-def force_srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def force_srun(command, conf: dict = None, simple_slurm_kwargs: dict = None) -> int:
     """
     Just calling simple_slurm's srun but with default parameters of slurminade.
     `srun` executes the command on a slurm node but waits for the return.
     :param command: The command to be executed.
     :param conf: Slurm configuration changes just for this command.
     :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
-    :return: The return of `simple_slurm.srun`.
+    :return: The job id.
     """
     conf = _get_conf(conf)
     slurm = simple_slurm.Slurm(**conf)
@@ -145,7 +145,7 @@ def force_srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
         return slurm.srun(command)
 
 
-def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None) -> int:
     """
     Just calling simple_slurm's srun but with default parameters of slurminade.
     `srun` executes the command on a slurm node but waits for the return.
@@ -153,26 +153,27 @@ def srun(command, conf: dict = None, simple_slurm_kwargs: dict = None):
     :param command: The command to be executed.
     :param conf: Slurm configuration changes just for this command.
     :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
-    :return: The return of `simple_slurm.srun`.
+    :return: The job id.
     """
     if shutil.which("srun"):
-        force_srun(command, conf, simple_slurm_kwargs)
+        return force_srun(command, conf, simple_slurm_kwargs)
     else:
         print(
             "SRUN is not available. Running code locally. "
             "If you do not want this, use `force_srun'."
         )
         subprocess.run(command, check=True)
+        return -1
 
 
-def force_sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def force_sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None) -> int:
     """
     Just calling simple_slurm's sbatch but with default parameters of slurminade.
     `sbatch` executes the command on a slurm node and returns directly.
     :param command: The command to be executed.
     :param conf: Slurm configuration changes just for this command.
     :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
-    :return: The return of `simple_slurm.sbatch`.
+    :return: The job id.
     """
     conf = _get_conf(conf)
     slurm = simple_slurm.Slurm(**conf)
@@ -182,7 +183,7 @@ def force_sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
         return slurm.sbatch(command)
 
 
-def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
+def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None) -> int:
     """
     Just calling simple_slurm's sbatch but with default parameters of slurminade.
     `sbatch` executes the command on a slurm node and returns directly.
@@ -190,13 +191,14 @@ def sbatch(command, conf: dict = None, simple_slurm_kwargs: dict = None):
     :param command: The command to be executed.
     :param conf: Slurm configuration changes just for this command.
     :param simple_slurm_kwargs: Use this to change the arguments passed to simple_slurm.
-    :return: The return of `simple_slurm.sbatch`.
+    :return: The job id.
     """
     if shutil.which("sbatch"):
-        force_srun(command, conf, simple_slurm_kwargs)
+        return force_srun(command, conf, simple_slurm_kwargs)
     else:
         print(
             "sbatch is not available. Running code locally. "
             "If you do not want this, use `force_sbatch'."
         )
         subprocess.run(command, check=True)
+        return -1

@@ -20,9 +20,9 @@ class _FunctionCall:
     Encapsulate a function call to be dispatched.
     """
 
-    def __init__(self, func_id: str, args: typing.List, kwargs: typing.Dict):
+    def __init__(self, func_id: str, args: typing.Iterable, kwargs: typing.Dict):
         self.func_id = func_id
-        self.args = args
+        self.args = list(args)
         self.kwargs = kwargs
 
     def get_arguments_as_json_string(self) -> str:
@@ -115,19 +115,19 @@ class Dispatcher:
         func_call: _FunctionCall,
         special_slurm_opts: dict,
         entry_file_path: typing.Optional[str] = None,
-    ) -> None:
+    ) -> int:
         """
         Dispatch a function call to slurm.
         :param func_call: The function call to execute on a slurm node.
         :param special_slurm_opts: Special options for slurm.
         :param entry_file_path: An optional entry point that allows the slurm node to
         find the desired function definition.
-        :return: None
+        :return: Job id
         """
         dispatch_guard()
         entry_file_path = self._select_entry_point(entry_file_path)
         slurm = self._create_slurm_api(special_slurm_opts)
-        slurm.sbatch(
+        return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
             f" {entry_file_path}"
             f" {func_call.func_id}"
@@ -138,7 +138,7 @@ class Dispatcher:
         self,
         func_calls: typing.List[_FunctionCall],
         special_slurm_opts: typing.Dict,
-        entry_file_path: typing.Optional[str] = None,
+        entry_file_path: typing.Optional[str] = int,
     ):
         """
         Dispatch a batch of function calls to slurm.
@@ -146,12 +146,12 @@ class Dispatcher:
         :param special_slurm_opts: Special options for slurm.
         :param entry_file_path: An optional entry point that allows the slurm node to
         find the desired function definition.
-        :return: None
+        :return: Job id
         """
         dispatch_guard()
         entry_file_path = self._select_entry_point(entry_file_path)
         slurm = self._create_slurm_api(special_slurm_opts)
-        slurm.sbatch(
+        return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
             f" {entry_file_path}"
             f" __BATCH__"
