@@ -24,7 +24,8 @@ class TooManyDispatchesError(RuntimeError):
         return (
             f"Exceeded the dispatch limit of {self.n_calls} calls. "
             f"This limit has been introduced to prevent you from spamming your "
-            f"slurm environment in case of a bug. You can increase it "
+            f"slurm environment in case of a bug. You can increase it"
+            f" using `set_dispatch_limit`."
         )
 
 

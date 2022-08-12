@@ -12,50 +12,41 @@ configuration specified with slurminade).
 
 A simple script that executes a function three times on slurm-nodes could look like this:
 ```python
-
 import slurminade
-import datetime
 
-# Settings for slurm
-slurminade.set_dispatch_limit(10)  # only allow 10 dispatches as a safety measure.
-slurminade.update_default_configuration(partition="alg", constraint="alggen02")
+slurminade.update_default_configuration(partition="alg")  # global options
 
+# If no slurm environment is found, the functions are called directly to make scripts
+# compatible with any environment.
+# You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
-@slurminade.slurmify()
-def test(file_name, text):
-    with open(file_name, "w") as f:
-        f.write(text)
-
-@slurminade.slurmify()
+@slurminade.slurmify(constraint="alggen02")  # function specific options
 def prepare():
-    pass  # prepare stuff
-        
-@slurminade.slurmify()        
-def notify_me():
-    pass  # send a mail, clean up, or whatever.
+    print("Prepare")
 
-# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
+@slurminade.slurmify()
+def f(foobar):
+    print(f"f({foobar})")
+
+@slurminade.slurmify()
+def clean_up():
+    print("Clean up")
+
+
 if __name__ == "__main__":
-    # Add a preparation task that need to be executed before `test` can be called.
-    # This `prepare` will only be called one and the test tasks wait until it finished.
     jid = prepare.distribute()
-    test.update_options({"dependency": f"afterany:{jid}"})
-    
-    # Call the function remotely.
-    test.distribute("slurminade_test_1.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    test.distribute("slurminade_test_2.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    test.distribute("slurminade_test_3.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    
-    # automatically batch a number of tasks. This is useful, if you have many
-    # short tasks, which would be inefficient as separate tasks.
-    with slurminade.AutoBatch(max_batch_size=10) as batch:
-        # individual `distribute` calls will not be part of the batch!
-        batch.add(test, "slurminade_test_4a.txt", "Hello!")
-        batch.add(test, "slurminade_test_4b.txt", "Hello!")
-        batch.on_completion(notify_me)  # called after the batch is finished.
+
+    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+        # run 10x f after prepare has finished
+        for i in range(100):
+            f.wait_for(jid).distribute(i)
+
+        # clean up after the previous jobs have finished
+        jids = batch.flush()
+        clean_up.wait_for(jids).distribute()
 ```
 
-> :warning: You should not use this to spam your slurm environment with tasks. Only distribute a function call if it takes at least a few seconds, otherwise it will be faster to run it locally. Use `AutoBatch` if you need to make may calls.
+> :warning: Always use `Batch` when distributing many tasks. Otherwise, you DDoS your slurm.
 
 We recommend to use *slurminade* with [conda](https://docs.conda.io/en/latest/).
 We have not tested it with other virtual environments.
@@ -114,7 +105,6 @@ def bad_global(args):
     else:
         pass
 
-# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
 if __name__ == "__main__":
     FLAG = False
     bad_global.distribute("args")
@@ -179,5 +169,8 @@ without slurm. If there is a bug, you will directly see it in the output (at lea
 ## Changes
 
 * 0.5.0:
-  * Introduced `on_completion` for batches.
-  * Job ids are now returned.
+  * Functions now have a `wait_for`-option and return job ids. 
+  * Braking changes: Batches have a new API.
+    * `add` is no longer needed.
+    * `AutoBatch` is now called `Batch`.
+  * Fundamental code changes under the hood.
