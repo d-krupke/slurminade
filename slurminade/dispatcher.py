@@ -138,8 +138,8 @@ class Dispatcher:
         self,
         func_calls: typing.List[_FunctionCall],
         special_slurm_opts: typing.Dict,
-        entry_file_path: typing.Optional[str] = int,
-    ):
+        entry_file_path: typing.Optional[str] = None,
+    ) -> int:
         """
         Dispatch a batch of function calls to slurm.
         :param func_calls: The function calls to execute on a slurm node.
