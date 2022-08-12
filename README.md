@@ -26,8 +26,21 @@ def test(file_name, text):
     with open(file_name, "w") as f:
         f.write(text)
 
+@slurminade.slurmify()
+def prepare():
+    pass  # prepare stuff
+        
+@slurminade.slurmify()        
+def notify_me():
+    pass  # send a mail, clean up, or whatever.
+
 # Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
 if __name__ == "__main__":
+    # Add a preparation task that need to be executed before `test` can be called.
+    # This `prepare` will only be called one and the test tasks wait until it finished.
+    jid = prepare.distribute()
+    test.update_options({"dependency": f"afterany:{jid}"})
+    
     # Call the function remotely.
     test.distribute("slurminade_test_1.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
     test.distribute("slurminade_test_2.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
@@ -36,11 +49,13 @@ if __name__ == "__main__":
     # automatically batch a number of tasks. This is useful, if you have many
     # short tasks, which would be inefficient as separate tasks.
     with slurminade.AutoBatch(max_batch_size=10) as batch:
+        # individual `distribute` calls will not be part of the batch!
         batch.add(test, "slurminade_test_4a.txt", "Hello!")
         batch.add(test, "slurminade_test_4b.txt", "Hello!")
+        batch.on_completion(notify_me)  # called after the batch is finished.
 ```
 
-> :warning: You should not use this to spam your slurm environment with tasks. Only distribute a function call if it takes at least a few seconds, otherwise it will be faster to run it locally.
+> :warning: You should not use this to spam your slurm environment with tasks. Only distribute a function call if it takes at least a few seconds, otherwise it will be faster to run it locally. Use `AutoBatch` if you need to make may calls.
 
 We recommend to use *slurminade* with [conda](https://docs.conda.io/en/latest/).
 We have not tested it with other virtual environments.
@@ -159,3 +174,10 @@ For example
 
 You can use `.local` instead of `.distribute` to run the task on the local computer, 
 without slurm. If there is a bug, you will directly see it in the output (at least for most bugs).
+
+
+## Changes
+
+* 0.5.0:
+  * Introduced `on_completion` for batches.
+  * Job ids are now returned.

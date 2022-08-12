@@ -9,7 +9,7 @@ f_file = "./f_test_file.txt"
 g_file = "./g_test_file.txt"
 
 
-@slurminade.slurmify
+@slurminade.slurmify()
 def f():
     with open(f_file, "w") as file:
         file.write("test")

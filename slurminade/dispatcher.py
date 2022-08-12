@@ -1,10 +1,9 @@
-"""
-Implements functionality to dispatch a function call. Not for the end user.
-"""
-
+import abc
 import json
+import logging
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import typing
@@ -12,157 +11,178 @@ import typing
 import simple_slurm
 
 from slurminade.conf import _get_conf
-from slurminade.guard import dispatch_guard
+from slurminade.function_map import FunctionMap
+from slurminade.options import SlurmOptions
 
 
-class _FunctionCall:
-    """
-    Encapsulate a function call to be dispatched.
-    """
-
-    def __init__(self, func_id: str, args: typing.Iterable, kwargs: typing.Dict):
+class FunctionCall:
+    def __init__(self, func_id, args, kwargs):
         self.func_id = func_id
-        self.args = list(args)
+        self.args = args
         self.kwargs = kwargs
 
-    def get_arguments_as_json_string(self) -> str:
-        data = {"args": self.args, "kwargs": self.kwargs}
-        serialized = json.dumps(data)
-        if len(serialized) > 300:
-            print(
-                f"WARNING: Using slurminade function with long"
-                f" function arguments ({len(serialized)}). This can be inefficient."
-            )
-        return serialized
-
-    def as_json(self):
+    def to_json(self):
         return {"func_id": self.func_id, "args": self.args, "kwargs": self.kwargs}
 
 
-class Dispatcher:
-    """
-    The dispatcher will dispatch a function call either to slurm or to a local process.
-    """
-
+class Dispatcher(abc.ABC):
     def __init__(self):
-        self._main_file = None
+        import __main__
+        self.entry_point = __main__.__file__
 
-    def _init_main_file(self):
-        if not self._main_file:
-            import __main__
+    @abc.abstractmethod
+    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
+                  options: SlurmOptions) -> int:
+        pass
 
-            self.set_default_entry_point(__main__.__file__)
+    @abc.abstractmethod
+    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        pass
 
-    def set_default_entry_point(self, entry_file_path: str):
-        """
-        Change the entry point from the main file to some other path.
-        You should barely need to use this method (only when the function definition
-        is not loaded from the main file by default or you are calling from an
-        interactive environment.
-        :param entry_file_path: A path to an entry point python file.
-        :return:
-        """
-        if not os.path.isfile(entry_file_path) or not entry_file_path.endswith(".py"):
-            raise ValueError("Illegal entry point.")
-        if entry_file_path:
-            entry_file_path = os.path.normpath(os.path.abspath(entry_file_path))
-        self._main_file = entry_file_path
+    @abc.abstractmethod
+    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        pass
 
-    def _select_entry_point(self, manual_entry_file_path):
-        if manual_entry_file_path:
-            manual_entry_file_path = os.path.normpath(
-                os.path.abspath(manual_entry_file_path)
-            )
-        self._init_main_file()
-        if not manual_entry_file_path and not self.has_main_file():
-            raise RuntimeError(
-                "This call does not have an entry point. "
-                "If you are using slurminade interactively, "
-                "please specify the entry point (e.g., the file the "
-                "function is defined."
-            )
-        return manual_entry_file_path if manual_entry_file_path else self._main_file
+    def __call__(self,
+                 funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
+                 options: SlurmOptions) -> int:
+        if isinstance(funcs, FunctionCall):
+            funcs = [funcs]
+        return self._dispatch(funcs, options)
+
+    def is_sequential(self):
+        return False
+
+
+class TestDispatcher(Dispatcher):
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+        self.sbatches = []
+        self.sruns = []
+
+    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
+                  options: SlurmOptions) -> int:
+        funcs = list(funcs)
+        print(f"{sys.executable} -m slurminade.execute"
+            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}")
+        self.calls.append(funcs)
+        return -1
+
+    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        self.sruns.append(command)
+        print("SRUN", command)
+
+    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        self.sbatches.append(command)
+        print("SBATCH", command)
+
+    def is_sequential(self):
+        return True
+
+
+class SlurmDispatcher(Dispatcher):
+    def __init__(self):
+        super().__init__()
+        if not shutil.which("sbatch"):
+            raise RuntimeError("Slurm could not be found.")
 
     def _create_slurm_api(self, special_slurm_opts):
         conf = _get_conf(special_slurm_opts)
         slurm = simple_slurm.Slurm(**conf)
         return slurm
 
-    def dispatch_locally(
-        self, func_call: _FunctionCall, entry_file_path: typing.Optional[str] = None
-    ) -> None:
-        """
-        Dispatch function call to a local process. Good for testing/debugging or running
-        without slurm.
-        :param func_call: The function call to be executed.
-        :param entry_file_path: The optional entry file path. E.g., executing this file
-        should provide the necessary function definition.
-        :return: None
-        """
-        entry_file_path = self._select_entry_point(entry_file_path)
-        slurm_task = [
-            sys.executable,
-            "-m",
-            "slurminade.execute",
-            entry_file_path,
-            func_call.func_id,
-            func_call.get_arguments_as_json_string(),
-        ]
-        subprocess.run(slurm_task, shell=False, check=True)
-
-    def dispatch_to_slurm(
-        self,
-        func_call: _FunctionCall,
-        special_slurm_opts: dict,
-        entry_file_path: typing.Optional[str] = None,
-    ) -> int:
-        """
-        Dispatch a function call to slurm.
-        :param func_call: The function call to execute on a slurm node.
-        :param special_slurm_opts: Special options for slurm.
-        :param entry_file_path: An optional entry point that allows the slurm node to
-        find the desired function definition.
-        :return: Job id
-        """
-        dispatch_guard()
-        entry_file_path = self._select_entry_point(entry_file_path)
-        slurm = self._create_slurm_api(special_slurm_opts)
+    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
+                  options: SlurmOptions) -> int:
+        slurm = self._create_slurm_api(options)
         return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
-            f" {entry_file_path}"
-            f" {func_call.func_id}"
-            f" {shlex.quote(func_call.get_arguments_as_json_string())}"
+            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
         )
 
-    def dispatch_batch_to_slurm(
-        self,
-        func_calls: typing.List[_FunctionCall],
-        special_slurm_opts: typing.Dict,
-        entry_file_path: typing.Optional[str] = None,
-    ) -> int:
-        """
-        Dispatch a batch of function calls to slurm.
-        :param func_calls: The function calls to execute on a slurm node.
-        :param special_slurm_opts: Special options for slurm.
-        :param entry_file_path: An optional entry point that allows the slurm node to
-        find the desired function definition.
-        :return: Job id
-        """
-        dispatch_guard()
-        entry_file_path = self._select_entry_point(entry_file_path)
-        slurm = self._create_slurm_api(special_slurm_opts)
-        return slurm.sbatch(
+    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        conf = _get_conf(conf)
+        slurm = simple_slurm.Slurm(**conf)
+        if simple_slurm_kwargs:
+            return slurm.sbatch(command, **simple_slurm_kwargs)
+        else:
+            return slurm.sbatch(command)
+
+    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        conf = _get_conf(conf)
+        slurm = simple_slurm.Slurm(**conf)
+        if simple_slurm_kwargs:
+            return slurm.srun(command, **simple_slurm_kwargs)
+        else:
+            return slurm.srun(command)
+
+
+class SubprocessDispatcher(Dispatcher):
+    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
+                  options: SlurmOptions) -> int:
+        os.system(
             f"{sys.executable} -m slurminade.execute"
-            f" {entry_file_path}"
-            f" __BATCH__"
-            f" {shlex.quote(json.dumps([f.as_json() for f in func_calls]))}"
+            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
         )
+        return -1
 
-    def has_main_file(self) -> bool:
-        """
-        Return true if the current execution has a main file that can be used as entry
-        point.
-        :return: True if the code is saved in proper files.
-        """
-        self._init_main_file()
-        return os.path.isfile(self._main_file) and self._main_file.endswith(".py")
+    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        subprocess.run(command, check=True)
+
+    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        self.srun(command)
+
+    def is_sequential(self):
+        return True
+
+class DirectCallDispatcher(Dispatcher):
+    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
+                  options: SlurmOptions) -> int:
+        for func in funcs:
+            FunctionMap.call(func.func_id, func.args, func.kwargs)
+        return -1
+
+    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        subprocess.run(command, check=True)
+
+    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        self.srun(command)
+
+    def is_sequential(self):
+        return True
+
+__dispatcher: typing.Optional[Dispatcher] = None
+
+
+def get_dispatcher() -> Dispatcher:
+    global __dispatcher
+    if __dispatcher is None:
+        try:
+            __dispatcher = SlurmDispatcher()
+        except RuntimeError as re:
+            logging.getLogger("slurminade").warning(str(re))
+            logging.getLogger("slurminade").warning("Using direct calls.")
+            __dispatcher = DirectCallDispatcher()
+    return __dispatcher
+
+
+def set_dispatcher(dispatcher: Dispatcher):
+    global __dispatcher
+    __dispatcher = dispatcher
+    assert dispatcher == get_dispatcher()
+
+
+def dispatch(funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
+             options: SlurmOptions) -> int:
+    return get_dispatcher()(funcs, options)
+
+
+def srun(command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    return get_dispatcher().srun(command, conf, simple_slurm_kwargs)
+
+
+def sbatch(command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)
