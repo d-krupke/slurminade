@@ -1,3 +1,11 @@
+"""
+Some security measures to prevent you from DDoSing your infrastructure.
+1. Preventing recursive distributions, i.e., slurm nodes also distributing tasks.
+2. Limiting the number of distributed tasks.
+
+You can disable these security mechanisms by
+`allow_recursive_distribution` and `set_dispatch_limit(None)`.
+"""
 import typing
 
 __exec_flag = False
@@ -14,6 +22,14 @@ def guard_recursive_distribution():
 
 def prevent_distribution():
     __exec_flag = True
+
+
+def allow_recursive_distribution() -> None:
+    """
+    Allow recursive distribution. Dangerous!
+    :return: None
+    """
+    __exec_flag = False
 
 
 class TooManyDispatchesError(RuntimeError):
@@ -47,7 +63,7 @@ class _DispatchGuard:
         self.remaining_calls = n
 
 
-dispatch_guard = _DispatchGuard(1000)
+dispatch_guard = _DispatchGuard(100)
 
 
 def set_dispatch_limit(n: typing.Optional[int]):

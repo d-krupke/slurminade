@@ -1,3 +1,8 @@
+"""
+The internal datastructure to save all the slurmified functions.
+Not relevant for endusers.
+"""
+
 import inspect
 import typing
 import os
@@ -10,11 +15,22 @@ class FunctionMap:
     it is supposed to call just by the id.
     """
 
-    entry_point: typing.Optional[str] = None  # needed to save the entry point at the slurm node.
+    # Needed to save the entry point at the slurm node.
+    # The slurm node just executes the file content of a script, so the file name is lost.
+    # slurminade will set this value in the beginning to reconstruct it.
+    entry_point: typing.Optional[str] = None
     _data = {}
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
+        """
+        Returns the unique id of a function. Necessary to slurmify it.
+        Probably not needed by the enduser.
+        It uses the function name and its file, which should be sufficient unless you
+        do not overwrite a function (which is bad anyway).
+        :param func: The function you want the id of.
+        :return: The id as string.
+        """
         file = inspect.getfile(func)
         if file == "<string>":  # on the slurm node, the functions in the entry point
             # are named `<string>`.
@@ -32,9 +48,9 @@ class FunctionMap:
         :return: None
         """
         if (
-                not func.__name__
-                or func.__name__ == "<lambda>"
-                or not inspect.getfile(func)
+            not func.__name__
+            or func.__name__ == "<lambda>"
+            or not inspect.getfile(func)
         ):
             raise ValueError("Can only slurmify proper functions.")
 
@@ -53,8 +69,9 @@ class FunctionMap:
         return func_id
 
     @staticmethod
-    def call(func_id: str, args: typing.Iterable,
-             kwargs: typing.Dict[str, typing.Any]) -> typing.Any:
+    def call(
+        func_id: str, args: typing.Iterable, kwargs: typing.Dict[str, typing.Any]
+    ) -> typing.Any:
         """
         Calls a function by its id.
         :param func_id: The id of the function to be called.
@@ -65,3 +82,18 @@ class FunctionMap:
         if func_id not in FunctionMap._data:
             raise KeyError(f"Function '{func_id}' unknown!")
         return FunctionMap._data[func_id](*args, **kwargs)
+
+
+def set_entry_point(entry_point: str) -> None:
+    """
+    This function usually is not necessary for endusers.
+    Set a manual entry point. This can allow you to use slurmify from the interactive
+    interpreter.
+    :param entry_point: A path to the entry point file.
+    :return: None
+    """
+    if not os.path.isfile(entry_point) or not entry_point.endswith(".py"):
+        raise ValueError("Illegal entry point.")
+    entry_point = os.path.abspath(entry_point)
+    FunctionMap.entry_point = entry_point
+    # SlurmFunction.dispatcher.entry_point = entry_point

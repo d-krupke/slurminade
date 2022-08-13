@@ -1,16 +1,19 @@
 import slurminade
 
-slurminade.set_dispatch_limit(10) # allow maximally 10 dispatches
+slurminade.set_dispatch_limit(10)  # allow maximally 10 dispatches
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 # slurminade.set_dispatcher(slurminade.SlurmDispatcher())  # enforce slurm
+
 
 @slurminade.slurmify()
 def prepare():
     print("Prepare")
 
+
 @slurminade.slurmify()
 def f(foobar):
     print(f"f({foobar})")
+
 
 @slurminade.slurmify()
 def clean_up():

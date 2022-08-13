@@ -5,11 +5,12 @@ from slurminade import Batch
 
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
 
+
 @slurminade.slurmify()
 def f(hello_world):
     with open("slurminade_example.txt", "a") as f:
         print("hello")
-        f.write(hello_world+"\n")
+        f.write(hello_world + "\n")
 
 
 if __name__ == "__main__":

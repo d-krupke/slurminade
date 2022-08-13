@@ -12,8 +12,7 @@ class TaskContainer:
     def __init__(self):
         self._tasks = defaultdict(list)
 
-    def add(self, task: FunctionCall,
-            options: SlurmOptions) -> int:
+    def add(self, task: FunctionCall, options: SlurmOptions) -> int:
         self._tasks[options].append(task)
         return len(self._tasks[options])
 
@@ -36,31 +35,34 @@ class Batch(Dispatcher):
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskContainer()
 
-    def flush(self, options: typing.Optional[SlurmOptions] = None)\
-            -> typing.Iterable[int]:
+    def flush(
+        self, options: typing.Optional[SlurmOptions] = None
+    ) -> typing.Iterable[int]:
         job_ids = []
         if options is None:
             for opt, tasks in self._tasks.items():
                 while tasks:
-                    job_id = self.subdispatcher(tasks[:self.max_size], opt)
+                    job_id = self.subdispatcher(tasks[: self.max_size], opt)
                     job_ids.append(job_id)
-                    tasks = tasks[self.max_size:]
+                    tasks = tasks[self.max_size :]
 
         else:
             tasks = self._tasks.get(options)
             while len(tasks) > self.max_size:
-                job_id = self.subdispatcher(tasks[:self.max_size], options)
+                job_id = self.subdispatcher(tasks[: self.max_size], options)
                 job_ids.append(job_id)
-                tasks = tasks[:self.max_size]
+                tasks = tasks[: self.max_size]
         self._tasks.clear()
         return job_ids
 
     def add(self, func: SlurmFunction, *args, **kwargs):
-        self._dispatch([FunctionCall(func.func_id, args, kwargs)],
-                       func.special_slurm_opts)
+        self._dispatch(
+            [FunctionCall(func.func_id, args, kwargs)], func.special_slurm_opts
+        )
 
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
         for func in funcs:
             self._tasks.add(func, options)
         return -1

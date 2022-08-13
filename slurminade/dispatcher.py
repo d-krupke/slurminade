@@ -1,3 +1,9 @@
+"""
+The dispatcher distribute function calls to slurm or the local machine.
+It can be accessed with `get_dispatcher` and set with `set_dispatcher`.
+This allows to change the behaviour of the distribution, e.g., we use it for batch:
+Batch simply wraps the dispatcher by a buffered version.
+"""
 import abc
 import json
 import logging
@@ -16,57 +22,128 @@ from slurminade.options import SlurmOptions
 
 
 class FunctionCall:
-    def __init__(self, func_id, args, kwargs):
-        self.func_id = func_id
-        self.args = args
-        self.kwargs = kwargs
+    """
+    A function call to be dispatched.
+    """
 
-    def to_json(self):
+    def __init__(self, func_id, args, kwargs):
+        self.func_id = func_id  # the function id, as in FunctionMap
+        self.args = args  # the positional arguments for the call
+        self.kwargs = kwargs  # the keyword arguments for the call
+
+    def to_json(self) -> typing.Dict:
+        """
+        Convert call to a json object that can be passed to slurm.
+        :return: json object.
+        """
         return {"func_id": self.func_id, "args": self.args, "kwargs": self.kwargs}
 
 
 class Dispatcher(abc.ABC):
+    """
+    Abstract dispatcher to be inherited by all concrete dispatchers.
+    For implementing a dispatcher you have to implement `_dispatch`, `srun` and `sbatch`.
+
+    """
+
     def __init__(self):
         import __main__
+
         self.entry_point = __main__.__file__
 
     @abc.abstractmethod
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
+        """
+        Define how to dispatch a number of function calls.
+        :param funcs: The function calls to be dispatched.
+        :param options: The slurm options to be used.
+        :return: The job id. Use -1 if not applicable (e.g., because buffered)
+        """
         pass
 
     @abc.abstractmethod
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[SlurmOptions] = None,
+        simple_slurm_kwargs: dict = None,
+    ) -> int:
+        """
+        Define how you want to execute an `srun` command. This command is directly
+        executed and only terminates after completion.
+        :param command: A system command, e.g. `echo hello world > foobar.txt`.
+        :param conf: The slurm configuration.
+        :param simple_slurm_kwargs: Additional options for simple_slurm.
+        :return: Job id
+        """
         pass
 
     @abc.abstractmethod
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[SlurmOptions] = None,
+        simple_slurm_kwargs: dict = None,
+    ) -> int:
+        """
+        Define how you want to execute an `sbatch` command. The command is scheduled
+        and the function return immediately.
+        :param command: A system command, e.g. `echo hello world > foobar.txt`.
+        :param conf: The slurm configuration.
+        :param simple_slurm_kwargs: Additional options for simple_slurm.
+        :return: Job id.
+        """
         pass
 
-    def __call__(self,
-                 funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
-                 options: SlurmOptions) -> int:
+    def __call__(
+        self,
+        funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
+        options: SlurmOptions,
+    ) -> int:
+        """
+        Dispatches a function call or a number of function calls.
+        :param funcs: The function calls to be distributed.
+        :param options: The slurm options to be used.
+        :return: Job id.
+        """
         if isinstance(funcs, FunctionCall):
             funcs = [funcs]
         return self._dispatch(funcs, options)
 
     def is_sequential(self):
+        """
+        Return true if the dispatcher works sequential. In this case, the dependencies
+        are trivially fulfilled. Slurm does not work sequentially, because this
+        would destroy its purpose. In some cases however, you do not want to use
+        slurm for compatibility reasons, without chaning the script. In these cases,
+        this function tells slurminade not to be too strict about dependencies.
+        :return: True is tasks are executed sequentially, false if not.
+        """
         return False
 
 
 class TestDispatcher(Dispatcher):
+    """
+    A dummy dispatcher that just prints the output. Primarily for debugging and testing.
+    """
+
     def __init__(self):
         super().__init__()
         self.calls = []
         self.sbatches = []
         self.sruns = []
 
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
         funcs = list(funcs)
-        print(f"{sys.executable} -m slurminade.execute"
+        print(
+            f"{sys.executable} -m slurminade.execute"
             f" {shlex.quote(self.entry_point)}"
-            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}")
+            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
+        )
         self.calls.append(funcs)
         return -1
 
@@ -83,6 +160,10 @@ class TestDispatcher(Dispatcher):
 
 
 class SlurmDispatcher(Dispatcher):
+    """
+    The most important dispatcher: Distributing function calls to slurm.
+    """
+
     def __init__(self):
         super().__init__()
         if not shutil.which("sbatch"):
@@ -93,8 +174,9 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         return slurm
 
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
         slurm = self._create_slurm_api(options)
         return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
@@ -120,8 +202,17 @@ class SlurmDispatcher(Dispatcher):
 
 
 class SubprocessDispatcher(Dispatcher):
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    """
+    A dispatcher for debugging that distributes function calls using subprocesses.
+    Thus, it uses the same serialization mechanisms, but without a slurm dependency.
+    Completely useless for productive purposes. Use `DirectCallDispatcher` if you
+    don't want to use slurm.
+    Despite using subprocesses, it does not parallelize but works sequential.
+    """
+
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
         os.system(
             f"{sys.executable} -m slurminade.execute"
             f" {shlex.quote(self.entry_point)}"
@@ -138,9 +229,17 @@ class SubprocessDispatcher(Dispatcher):
     def is_sequential(self):
         return True
 
+
 class DirectCallDispatcher(Dispatcher):
-    def _dispatch(self, funcs: typing.Iterable[FunctionCall],
-                  options: SlurmOptions) -> int:
+    """
+    A dispatcher that calls functions as if we would not use slurminade.
+    This allows compatibility of scripts also on computers not integrated into
+    the slurm network.
+    """
+
+    def _dispatch(
+        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+    ) -> int:
         for func in funcs:
             FunctionMap.call(func.func_id, func.args, func.kwargs)
         return -1
@@ -154,10 +253,19 @@ class DirectCallDispatcher(Dispatcher):
     def is_sequential(self):
         return True
 
+
+# The current dispatcher. Use with `get_dispatcher` and `set_dispatcher`.
 __dispatcher: typing.Optional[Dispatcher] = None
 
 
 def get_dispatcher() -> Dispatcher:
+    """
+    Returns the current dispatcher. Creates a dispatcher if none is available.
+    First tries to create the slurm-dispatcher (as this is the primary purpose of
+    slurminade). If no slurm-environment can be found, it creates a DirectCallDispatcher
+    to allow compatibility.
+    :return: The dispatcher.
+    """
     global __dispatcher
     if __dispatcher is None:
         try:
@@ -169,20 +277,60 @@ def get_dispatcher() -> Dispatcher:
     return __dispatcher
 
 
-def set_dispatcher(dispatcher: Dispatcher):
+def set_dispatcher(dispatcher: Dispatcher) -> None:
+    """
+    Replaces the dispatcher. Can be used to enforce a specific dispatcher.
+    :param dispatcher: The dispatcher to be used.
+    :return: None
+    """
     global __dispatcher
     __dispatcher = dispatcher
     assert dispatcher == get_dispatcher()
 
 
-def dispatch(funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
-             options: SlurmOptions) -> int:
+def dispatch(
+    funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
+    options: SlurmOptions,
+) -> int:
+    """
+    Distribute function calls with the current dispatcher.
+    :param funcs: The functions calls to be distributed.
+    :param options: The slurm options to be used.
+    :return: The job id.
+    """
     return get_dispatcher()(funcs, options)
 
 
-def srun(command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+def srun(
+    command: str,
+    conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
+    simple_slurm_kwargs: dict = None,
+) -> int:
+    """
+    Call srun with the current dispatcher. This command is directly
+    executed and only terminates after completion.
+    :param command: A system command, e.g. `echo hello world > foobar.txt`.
+    :param conf: The slurm configuration.
+    :param simple_slurm_kwargs: Additional options for simple_slurm.
+    :return: Job id
+    """
+    if not isinstance(conf, SlurmOptions):
+        conf = SlurmOptions(**conf)
     return get_dispatcher().srun(command, conf, simple_slurm_kwargs)
 
 
-def sbatch(command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+def sbatch(
+    command: str,
+    conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
+    simple_slurm_kwargs: dict = None,
+) -> int:
+    """
+    The command is scheduled and the function returns immediately.
+    :param command: A system command, e.g. `echo hello world > foobar.txt`.
+    :param conf: The slurm configuration.
+    :param simple_slurm_kwargs: Additional options for simple_slurm.
+    :return: Job id.
+    """
+    if not isinstance(conf, SlurmOptions):
+        conf = SlurmOptions(**conf)
     return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)

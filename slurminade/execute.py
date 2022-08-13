@@ -7,6 +7,7 @@ import sys
 
 from .guard import prevent_distribution
 from .function import SlurmFunction
+from .function_map import set_entry_point
 import json
 
 
@@ -16,7 +17,7 @@ def main():
     batch_file = sys.argv[1]  # the file with the code (function definition)
     instructions = sys.argv[2]
     # Load the code
-    SlurmFunction.set_entry_point(batch_file)
+    set_entry_point(batch_file)
     with open(batch_file, "r") as f:
         code = "".join(f.readlines())
 
@@ -31,9 +32,8 @@ def main():
     argd = json.loads(instructions)
     assert isinstance(argd, list), "Should be a list of dicts"
     for fc in argd:
-        SlurmFunction.call(
-            fc["func_id"], *fc.get("args", []), **fc.get("kwargs", {})
-        )
+        SlurmFunction.call(fc["func_id"], *fc.get("args", []), **fc.get("kwargs", {}))
+
 
 if __name__ == "__main__":
     main()

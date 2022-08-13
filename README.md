@@ -10,7 +10,11 @@ Please check the documentation of [simple_slurm](https://github.com/amq92/simple
 possible parameters. You can also call simple_slurm directly by `srun` and `sbatch` (automatically with the 
 configuration specified with slurminade).
 
-A simple script that executes a function three times on slurm-nodes could look like this:
+*slurminade* has two design goals:
+1. Pythonic slurm: Allowing to use slurm in a Pythonic-way, without any shell commands etc.
+2. Compatibility: Scripts can also run without slurm. You can share a script and also people without slurm can execute it without any changes.
+
+A simple script could look like this:
 ```python
 import slurminade
 
@@ -40,10 +44,10 @@ if __name__ == "__main__":
     with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
         # run 100x f after `prepare` has finished
         for i in range(100):
-            f.wait_for(jid).distribute(i)
+            f.wait_for(jid).distribute(i)  # no job id while in batch!
 
         # clean up after the previous jobs have finished
-        jids = batch.flush()
+        jids = batch.flush()  # flush returns a list with all job ids.
         clean_up.wait_for(jids).distribute()
 ```
 
@@ -57,6 +61,8 @@ The code is super simple and open source, don't be afraid to create a fork that 
 If slurm is not available, `distribute` results in a local function call.
 Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
 *simple_slurm*).
+
+> :warning: Talk with you system administrator or supervisor to get the proper slurm configuration.
 
 ## Installation
 
@@ -178,6 +184,19 @@ to distribute the tasks without slurm using subprocesses.
 If there is a bug, you will directly see it in the output (at least for most bugs).
 
 
+## Project structure
+
+The project is reasonably easy:
+
+- batch.py: Contains code for bundling tasks, so we don't spam slurm with too many.
+- conf.py: Contains code for managing the configuration of slurm.
+- dispatcher.py: Contains code for actually dispatching tasks to slurm.
+- execute.py: Contains code to execute the task on the slurm node.
+- function.py: Contains the code for making a function slurm-compatible.
+- function_map.py: Saves all the slurified functions.
+- guard.py: Contains code to prevent you accidentally DDoSing your infrastructure.
+- options.py: Contains a simple data structure to save slurm options.
+
 ## Changes
 
 * 0.5.0:
@@ -186,3 +205,5 @@ If there is a bug, you will directly see it in the output (at least for most bug
     * `add` is no longer needed.
     * `AutoBatch` is now called `Batch`.
   * Fundamental code changes under the hood.
+* <0.5.0:
+  * Lots of experiments on finding the right interface.
