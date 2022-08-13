@@ -10,37 +10,48 @@ Please check the documentation of [simple_slurm](https://github.com/amq92/simple
 possible parameters. You can also call simple_slurm directly by `srun` and `sbatch` (automatically with the 
 configuration specified with slurminade).
 
-A simple script that executes a function three times on slurm-nodes could look like this:
+*slurminade* has two design goals:
+1. Pythonic slurm: Allowing to use slurm in a Pythonic-way, without any shell commands etc.
+2. Compatibility: Scripts can also run without slurm. You can share a script and also people without slurm can execute it without any changes.
+
+A simple script could look like this:
 ```python
-
 import slurminade
-import datetime
 
-# Settings for slurm
-slurminade.set_dispatch_limit(10)  # only allow 10 dispatches as a safety measure.
-slurminade.update_default_configuration(partition="alg", constraint="alggen02")
+slurminade.update_default_configuration(partition="alg")  # global options for slurm
 
+# If no slurm environment is found, the functions are called directly to make scripts
+# compatible with any environment.
+# You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
+
+# use this decorator to make a function distributable with slurm
+@slurminade.slurmify(constraint="alggen02")  # function specific options can be specified
+def prepare():
+    print("Prepare")
 
 @slurminade.slurmify()
-def test(file_name, text):
-    with open(file_name, "w") as f:
-        f.write(text)
+def f(foobar):
+    print(f"f({foobar})")
 
-# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
+@slurminade.slurmify()
+def clean_up():
+    print("Clean up")
+
+
 if __name__ == "__main__":
-    # Call the function remotely.
-    test.distribute("slurminade_test_1.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    test.distribute("slurminade_test_2.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    test.distribute("slurminade_test_3.txt", f"Hello World from slurminade! {str(datetime.datetime.now())}")
-    
-    # automatically batch a number of tasks. This is useful, if you have many
-    # short tasks, which would be inefficient as separate tasks.
-    with slurminade.AutoBatch(max_batch_size=10) as batch:
-        batch.add(test, "slurminade_test_4a.txt", "Hello!")
-        batch.add(test, "slurminade_test_4b.txt", "Hello!")
+    jid = prepare.distribute()
+
+    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+        # run 100x f after `prepare` has finished
+        for i in range(100):
+            f.wait_for(jid).distribute(i)  # no job id while in batch!
+
+        # clean up after the previous jobs have finished
+        jids = batch.flush()  # flush returns a list with all job ids.
+        clean_up.wait_for(jids).distribute()
 ```
 
-> :warning: You should not use this to spam your slurm environment with tasks. Only distribute a function call if it takes at least a few seconds, otherwise it will be faster to run it locally.
+> :warning: Always use `Batch` when distributing many tasks. Otherwise, you DDoS your slurm.
 
 We recommend to use *slurminade* with [conda](https://docs.conda.io/en/latest/).
 We have not tested it with other virtual environments.
@@ -48,9 +59,10 @@ We have not tested it with other virtual environments.
 The code is super simple and open source, don't be afraid to create a fork that fits your own needs.
 
 If slurm is not available, `distribute` results in a local function call.
-To enforce a distribution to a slurm node, use `force_distribute`.
 Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
 *simple_slurm*).
+
+> :warning: Talk with you system administrator or supervisor to get the proper slurm configuration.
 
 ## Installation
 
@@ -99,7 +111,6 @@ def bad_global(args):
     else:
         pass
 
-# Without the `if`, the node would also execute this part (*slurminade* will abort automatically)
 if __name__ == "__main__":
     FLAG = False
     bad_global.distribute("args")
@@ -157,5 +168,42 @@ For example
 
 ## Debugging
 
-You can use `.local` instead of `.distribute` to run the task on the local computer, 
-without slurm. If there is a bug, you will directly see it in the output (at least for most bugs).
+You can use
+```python
+import slurminade
+
+slurminade.set_dispatcher(slurminade.TestDispatcher())
+```
+to see the serialization or
+```python
+import slurminade
+slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
+```
+to distribute the tasks without slurm using subprocesses.
+
+If there is a bug, you will directly see it in the output (at least for most bugs).
+
+
+## Project structure
+
+The project is reasonably easy:
+
+- batch.py: Contains code for bundling tasks, so we don't spam slurm with too many.
+- conf.py: Contains code for managing the configuration of slurm.
+- dispatcher.py: Contains code for actually dispatching tasks to slurm.
+- execute.py: Contains code to execute the task on the slurm node.
+- function.py: Contains the code for making a function slurm-compatible.
+- function_map.py: Saves all the slurified functions.
+- guard.py: Contains code to prevent you accidentally DDoSing your infrastructure.
+- options.py: Contains a simple data structure to save slurm options.
+
+## Changes
+
+* 0.5.0:
+  * Functions now have a `wait_for`-option and return job ids. 
+  * Braking changes: Batches have a new API.
+    * `add` is no longer needed.
+    * `AutoBatch` is now called `Batch`.
+  * Fundamental code changes under the hood.
+* <0.5.0:
+  * Lots of experiments on finding the right interface.

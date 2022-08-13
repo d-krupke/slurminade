@@ -1,9 +1,7 @@
 import os.path
 import unittest
-import json
 
 import slurminade
-from slurminade.function import SlurmFunction
 
 f_file = "./f_test_file.txt"
 g_file = "./g_test_file.txt"
@@ -31,16 +29,28 @@ def delete_g():
         os.remove(g_file)
 
 
-class TestLocal(unittest.TestCase):
+def get_file_name():
+    filename = os.getenv('PYTEST_CURRENT_TEST').split("::")[0]
+    print(filename, os.path.abspath(filename))
+    return os.path.abspath(filename)
+
+
+class TestSubprocess(unittest.TestCase):
     def test_1(self):
+        slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
+        slurminade.set_entry_point(get_file_name())
+
         delete_f()
-        SlurmFunction.call(f.func_id)
+        f.distribute()
         self.assertTrue(os.path.exists(f_file))
         delete_f()
 
     def test_2(self):
+        slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
+        slurminade.set_entry_point(get_file_name())
+
         delete_g()
-        SlurmFunction.call(g.func_id, x="a", y=2)
+        g.distribute(x="a", y=2)
         self.assertTrue(os.path.exists(g_file))
         with open(g_file, "r") as file:
             self.assertEqual(file.readline(), "a:2")
