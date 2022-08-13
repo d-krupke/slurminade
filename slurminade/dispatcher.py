@@ -17,7 +17,7 @@ import typing
 import simple_slurm
 
 from slurminade.conf import _get_conf
-from slurminade.function_map import FunctionMap
+from slurminade.function_map import FunctionMap, get_entry_point
 from slurminade.options import SlurmOptions
 
 
@@ -45,11 +45,6 @@ class Dispatcher(abc.ABC):
     For implementing a dispatcher you have to implement `_dispatch`, `srun` and `sbatch`.
 
     """
-
-    def __init__(self):
-        import __main__
-
-        self.entry_point = __main__.__file__
 
     @abc.abstractmethod
     def _dispatch(
@@ -141,7 +136,7 @@ class TestDispatcher(Dispatcher):
         funcs = list(funcs)
         print(
             f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(get_entry_point())}"
             f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
         )
         self.calls.append(funcs)
@@ -180,7 +175,7 @@ class SlurmDispatcher(Dispatcher):
         slurm = self._create_slurm_api(options)
         return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(get_entry_point())}"
             f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
         )
 
@@ -215,7 +210,7 @@ class SubprocessDispatcher(Dispatcher):
     ) -> int:
         os.system(
             f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(self.entry_point)}"
+            f" {shlex.quote(get_entry_point())}"
             f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
         )
         return -1

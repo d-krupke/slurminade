@@ -1,4 +1,6 @@
-import shutil
+"""
+Contains code for bundling function calls together.
+"""
 import typing
 from collections import defaultdict
 
@@ -8,7 +10,11 @@ from slurminade.function import SlurmFunction
 from slurminade.options import SlurmOptions
 
 
-class TaskContainer:
+class TaskBuffer:
+    """
+    A simple container to buffer all the tasks by their options.
+    We can only bundle tasks with the same slurm options.
+    """
     def __init__(self):
         self._tasks = defaultdict(list)
 
@@ -29,15 +35,34 @@ class TaskContainer:
 
 
 class Batch(Dispatcher):
+    """
+    The logic to buffer the function calls. It wraps the original dispatcher.
+
+    You can use
+    ```
+    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+        # run 100x f
+        for i in range(100):
+            f.distribute(i)
+    ```
+    """
     def __init__(self, max_size: int):
+        """
+        :param max_size: Bundle up to this many calls.
+        """
         super().__init__()
         self.max_size = max_size
         self.subdispatcher = get_dispatcher()
-        self._tasks = TaskContainer()
+        self._tasks = TaskBuffer()
 
     def flush(
         self, options: typing.Optional[SlurmOptions] = None
     ) -> typing.Iterable[int]:
+        """
+        Distribute all buffered tasks. Return the job ids used.
+        :param options: Only flush tasks with specific options.
+        :return: A list of job ids.
+        """
         job_ids = []
         if options is None:
             for opt, tasks in self._tasks.items():
@@ -56,6 +81,13 @@ class Batch(Dispatcher):
         return job_ids
 
     def add(self, func: SlurmFunction, *args, **kwargs):
+        """
+        You can also add a task using `add` instead of `distribute`.
+        :param func: The function to call
+        :param args: The positional arguments
+        :param kwargs: The keywords arguments.
+        :return: None
+        """
         self._dispatch(
             [FunctionCall(func.func_id, args, kwargs)], func.special_slurm_opts
         )

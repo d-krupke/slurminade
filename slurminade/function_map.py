@@ -93,7 +93,15 @@ def set_entry_point(entry_point: str) -> None:
     :return: None
     """
     if not os.path.isfile(entry_point) or not entry_point.endswith(".py"):
-        raise ValueError("Illegal entry point.")
+        raise ValueError(f"Illegal entry point ({entry_point}).")
     entry_point = os.path.abspath(entry_point)
     FunctionMap.entry_point = entry_point
     # SlurmFunction.dispatcher.entry_point = entry_point
+
+def get_entry_point() -> str:
+    if FunctionMap.entry_point is None:
+        import __main__
+        entry_point = __main__.__file__
+
+        set_entry_point(entry_point)
+    return FunctionMap.entry_point
