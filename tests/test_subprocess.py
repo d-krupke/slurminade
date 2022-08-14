@@ -31,7 +31,8 @@ def delete_g():
 
 def get_file_name():
     filename = os.getenv('PYTEST_CURRENT_TEST').split("::")[0]
-    print(filename, os.path.abspath(filename))
+    if not os.path.exists(filename):  # sometimes the test folder gets duplicated.
+        filename = "/".join(filename.split("/")[1:])
     return os.path.abspath(filename)
 
 
