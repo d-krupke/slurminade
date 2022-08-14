@@ -198,7 +198,7 @@ The project is reasonably easy:
 - options.py: Contains a simple data structure to save slurm options.
 
 ## Changes
-
+* 0.5.1: `Batch` will now flush on delete, in case you forgot.
 * 0.5.0:
   * Functions now have a `wait_for`-option and return job ids. 
   * Braking changes: Batches have a new API.

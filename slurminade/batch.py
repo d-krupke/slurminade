@@ -117,5 +117,8 @@ class Batch(Dispatcher):
         self.flush()
         set_dispatcher(self.subdispatcher)
 
+    def __del__(self):
+        self.flush()
+
     def is_sequential(self):
         return self.subdispatcher.is_sequential()
