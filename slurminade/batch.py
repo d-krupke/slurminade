@@ -120,9 +120,5 @@ class Batch(Dispatcher):
     def __del__(self):
         self.flush()
 
-    def _check_dispatch_limit(self):
-        # Adding function calls to a Batch does not count towards the dispatch limit.
-        pass
-
     def is_sequential(self):
         return self.subdispatcher.is_sequential()

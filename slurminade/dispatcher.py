@@ -106,14 +106,7 @@ class Dispatcher(abc.ABC):
         """
         if isinstance(funcs, FunctionCall):
             funcs = [funcs]
-        self._check_dispatch_limit()
         return self._dispatch(funcs, options)
-
-    def _check_dispatch_limit(self):
-        """
-        Count the function call and enforce the dispatch limit.
-        """
-        dispatch_guard()
 
     def is_sequential(self):
         """
@@ -141,6 +134,7 @@ class TestDispatcher(Dispatcher):
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
+        dispatch_guard()
         funcs = list(funcs)
         print(
             f"{sys.executable} -m slurminade.execute"
@@ -151,10 +145,12 @@ class TestDispatcher(Dispatcher):
         return -1
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         self.sruns.append(command)
         print("SRUN", command)
 
     def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         self.sbatches.append(command)
         print("SBATCH", command)
 
@@ -180,6 +176,7 @@ class SlurmDispatcher(Dispatcher):
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
+        dispatch_guard()
         slurm = self._create_slurm_api(options)
         return slurm.sbatch(
             f"{sys.executable} -m slurminade.execute"
@@ -188,6 +185,7 @@ class SlurmDispatcher(Dispatcher):
         )
 
     def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
         if simple_slurm_kwargs:
@@ -196,6 +194,7 @@ class SlurmDispatcher(Dispatcher):
             return slurm.sbatch(command)
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
         if simple_slurm_kwargs:
@@ -224,6 +223,7 @@ class SubprocessDispatcher(Dispatcher):
         return -1
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         subprocess.run(command, check=True)
 
     def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
@@ -243,11 +243,13 @@ class DirectCallDispatcher(Dispatcher):
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
+        dispatch_guard()
         for func in funcs:
             FunctionMap.call(func.func_id, func.args, func.kwargs)
         return -1
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+        dispatch_guard()
         subprocess.run(command, check=True)
 
     def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
