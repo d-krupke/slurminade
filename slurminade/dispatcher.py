@@ -18,6 +18,7 @@ import simple_slurm
 
 from slurminade.conf import _get_conf
 from slurminade.function_map import FunctionMap, get_entry_point
+from slurminade.guard import dispatch_guard
 from slurminade.options import SlurmOptions
 
 
@@ -105,7 +106,14 @@ class Dispatcher(abc.ABC):
         """
         if isinstance(funcs, FunctionCall):
             funcs = [funcs]
+        self._check_dispatch_limit()
         return self._dispatch(funcs, options)
+
+    def _check_dispatch_limit(self):
+        """
+        Count the function call and enforce the dispatch limit.
+        """
+        dispatch_guard()
 
     def is_sequential(self):
         """

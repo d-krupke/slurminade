@@ -1,6 +1,12 @@
 import unittest
 
-from slurminade.guard import _DispatchGuard, TooManyDispatchesError
+import slurminade
+from slurminade.guard import _DispatchGuard, TooManyDispatchesError, set_dispatch_limit
+
+
+@slurminade.slurmify()
+def f():
+    pass
 
 
 class TestDispatchGuard(unittest.TestCase):
@@ -10,3 +16,17 @@ class TestDispatchGuard(unittest.TestCase):
         dg()
         dg()
         self.assertRaises(TooManyDispatchesError, dg)
+
+    def test_dispatch_limit(self):
+        set_dispatch_limit(3)
+        f.distribute()
+        f.distribute()
+        f.distribute()
+        self.assertRaises(TooManyDispatchesError, f.distribute)
+
+    def test_dispatch_limit_batch(self):
+        set_dispatch_limit(2)
+        with slurminade.Batch(max_size=2):
+            for _ in range(4):
+                f.distribute()
+        self.assertRaises(TooManyDispatchesError, f.distribute)
