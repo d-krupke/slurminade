@@ -193,12 +193,13 @@ The project is reasonably easy:
 - dispatcher.py: Contains code for actually dispatching tasks to slurm.
 - execute.py: Contains code to execute the task on the slurm node.
 - function.py: Contains the code for making a function slurm-compatible.
-- function_map.py: Saves all the slurified functions.
+- function_map.py: Saves all the slurmified functions.
 - guard.py: Contains code to prevent you accidentally DDoSing your infrastructure.
 - options.py: Contains a simple data structure to save slurm options.
 
 ## Changes
 
+* 0.5.3: Fixed a bug that caused the dispatch limit to have no effect.
 * 0.5.2: Added pyproject.toml for PEP compliance
 * 0.5.1: `Batch` will now flush on delete, in case you forgot.
 * 0.5.0:
