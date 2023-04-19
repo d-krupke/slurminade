@@ -135,19 +135,26 @@ class TestDispatcher(Dispatcher):
         self.calls = []
         self.sbatches = []
         self.sruns = []
+        self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
         dispatch_guard()
         funcs = list(funcs)
-        print(
-            f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(get_entry_point())}"
-            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
-        )
+        command = create_slurminade_command(funcs, self.max_arg_length)
+        print(command)
         self.calls.append(funcs)
+        self._cleanup(command)
         return -1
+
+    def _cleanup(self, command):
+        args = shlex.split(command)
+        if args[-2] != "temp":
+            return
+        filename = args[-1]
+        if os.path.exists(filename):
+            os.remove(filename)
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
         dispatch_guard()
