@@ -4,6 +4,7 @@ import slurminade
 from slurminade.guard import _DispatchGuard, TooManyDispatchesError, set_dispatch_limit
 
 
+
 @slurminade.slurmify()
 def f():
     pass
@@ -11,6 +12,7 @@ def f():
 
 class TestDispatchGuard(unittest.TestCase):
     def test_simple(self):
+        slurminade.set_entry_point(__file__)
         dg = _DispatchGuard(3)
         dg()
         dg()
@@ -18,6 +20,7 @@ class TestDispatchGuard(unittest.TestCase):
         self.assertRaises(TooManyDispatchesError, dg)
 
     def test_dispatch_limit(self):
+        slurminade.set_entry_point(__file__)
         set_dispatch_limit(3)
         f.distribute()
         f.distribute()
@@ -25,6 +28,7 @@ class TestDispatchGuard(unittest.TestCase):
         self.assertRaises(TooManyDispatchesError, f.distribute)
 
     def test_dispatch_limit_batch(self):
+        slurminade.set_entry_point(__file__)
         set_dispatch_limit(2)
         with slurminade.Batch(max_size=2):
             for _ in range(4):

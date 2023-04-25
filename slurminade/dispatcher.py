@@ -228,6 +228,7 @@ class SubprocessDispatcher(Dispatcher):
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
+        dispatch_guard()
         command = create_slurminade_command(funcs, self.max_arg_length)
         os.system(command)
         return -1

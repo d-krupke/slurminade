@@ -30,7 +30,8 @@ def delete_g():
 
 
 def get_file_name():
-    filename = os.getenv('PYTEST_CURRENT_TEST').split("::")[0]
+    filename = os.getenv('PYTEST_CURRENT_TEST')  # doesn't seem to work always
+    filename = filename.split("::")[0] if filename else __file__  #workaround
     if not os.path.exists(filename):  # sometimes the test folder gets duplicated.
         filename = "/".join(filename.split("/")[1:])
     return os.path.abspath(filename)
@@ -39,6 +40,7 @@ def get_file_name():
 class TestSubprocess(unittest.TestCase):
     def test_1(self):
         slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
+        slurminade.set_dispatch_limit(100)
         slurminade.set_entry_point(get_file_name())
 
         delete_f()
@@ -49,6 +51,7 @@ class TestSubprocess(unittest.TestCase):
     def test_2(self):
         slurminade.set_dispatcher(slurminade.SubprocessDispatcher())
         slurminade.set_entry_point(get_file_name())
+        slurminade.set_dispatch_limit(100)
 
         delete_g()
         g.distribute(x="a", y=2)
