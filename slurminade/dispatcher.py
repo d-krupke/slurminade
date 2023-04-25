@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from tempfile import mkstemp
 
 import simple_slurm
 
@@ -20,6 +21,10 @@ from slurminade.conf import _get_conf
 from slurminade.function_map import FunctionMap, get_entry_point
 from slurminade.guard import dispatch_guard
 from slurminade.options import SlurmOptions
+
+
+# MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
+DEFAULT_MAX_ARG_LENGTH = 100000
 
 
 class FunctionCall:
@@ -130,19 +135,26 @@ class TestDispatcher(Dispatcher):
         self.calls = []
         self.sbatches = []
         self.sruns = []
+        self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
         dispatch_guard()
         funcs = list(funcs)
-        print(
-            f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(get_entry_point())}"
-            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
-        )
+        command = create_slurminade_command(funcs, self.max_arg_length)
+        print(command)
         self.calls.append(funcs)
+        self._cleanup(command)
         return -1
+
+    def _cleanup(self, command):
+        args = shlex.split(command)
+        if args[-2] != "temp":
+            return
+        filename = args[-1]
+        if os.path.exists(filename):
+            os.remove(filename)
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
         dispatch_guard()
@@ -167,6 +179,7 @@ class SlurmDispatcher(Dispatcher):
         super().__init__()
         if not shutil.which("sbatch"):
             raise RuntimeError("Slurm could not be found.")
+        self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _create_slurm_api(self, special_slurm_opts):
         conf = _get_conf(special_slurm_opts)
@@ -178,11 +191,8 @@ class SlurmDispatcher(Dispatcher):
     ) -> int:
         dispatch_guard()
         slurm = self._create_slurm_api(options)
-        return slurm.sbatch(
-            f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(get_entry_point())}"
-            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
-        )
+        command = create_slurminade_command(funcs, self.max_arg_length)
+        return slurm.sbatch(command)
 
     def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
         dispatch_guard()
@@ -211,15 +221,15 @@ class SubprocessDispatcher(Dispatcher):
     don't want to use slurm.
     Despite using subprocesses, it does not parallelize but works sequential.
     """
+    def __init__(self):
+        super().__init__()
+        self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
-        os.system(
-            f"{sys.executable} -m slurminade.execute"
-            f" {shlex.quote(get_entry_point())}"
-            f" {shlex.quote(json.dumps([f.to_json() for f in funcs]))}"
-        )
+        command = create_slurminade_command(funcs, self.max_arg_length)
+        os.system(command)
         return -1
 
     def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
@@ -257,6 +267,32 @@ class DirectCallDispatcher(Dispatcher):
 
     def is_sequential(self):
         return True
+
+
+def create_slurminade_command(funcs: typing.Iterable[FunctionCall], max_arg_length: int) -> str:
+    """
+    Creates a terminal command that calls the Python module `slurminade.execute` with the
+    provided function calls as an argument. If the total length of the function calls
+    exceeds the maximum allowed length of a command line argument, a temporary file is
+    created to pass the function calls instead.
+    :param funcs: The function calls to be dispatched.
+    :param max_arg_length: The maximum allowed length of a command line argument.
+    :returns: A string representing the command to be executed in the terminal.
+    """
+    command = f"{sys.executable} -m slurminade.execute {shlex.quote(get_entry_point())}"
+
+    # Serialize function calls as JSON
+    serialized_calls = json.dumps([f.to_json() for f in funcs])
+
+    if len(shlex.quote(serialized_calls)) > max_arg_length:
+        # The argument is too long, create temporary file for the JSON
+        fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
+        with os.fdopen(fd, 'w') as f:
+            f.write(serialized_calls)
+        command += f" temp {shlex.quote(filename)}"
+    else:
+        command += f" arg {shlex.quote(serialized_calls)}"
+    return command
 
 
 # The current dispatcher. Use with `get_dispatcher` and `set_dispatcher`.
