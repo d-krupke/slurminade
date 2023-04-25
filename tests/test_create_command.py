@@ -36,7 +36,8 @@ class TestCreateCommand(unittest.TestCase):
 
     def test_dispatch_with_temp_file(self):
         slurminade.set_entry_point(__file__)
-        test_file_path.unlink(missing_ok=True)
+        if test_file_path.exists():
+            test_file_path.unlink()
         dispatcher = slurminade.SubprocessDispatcher()
         dispatcher.max_arg_length = 1
         slurminade.set_dispatcher(dispatcher)
