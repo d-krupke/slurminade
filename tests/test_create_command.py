@@ -16,6 +16,7 @@ def f(s):
 
 class TestCreateCommand(unittest.TestCase):
     def test_create_long_command(self):
+        slurminade.set_entry_point(__file__)
         test_call = FunctionCall(f.func_id, ["." * 100], {})
         command = create_slurminade_command([test_call], 100)
         args = shlex.split(command)
@@ -26,6 +27,7 @@ class TestCreateCommand(unittest.TestCase):
         path.unlink(missing_ok=True)    # delete the file
 
     def test_create_short_command(self):
+        slurminade.set_entry_point(__file__)
         test_call = FunctionCall(f.func_id, [""], {})
         command = create_slurminade_command([test_call], 100000)
         args = shlex.split(command)
