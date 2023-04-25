@@ -199,6 +199,7 @@ The project is reasonably easy:
 
 ## Changes
 
+* 0.5.5: Fixing bug guard bug in subprocess dispatcher.
 * 0.5.4: Dispatched function calls that are too long for the command line now use a temporary file instead.
 * 0.5.3: Fixed a bug that caused the dispatch limit to have no effect.
 * 0.5.2: Added pyproject.toml for PEP compliance

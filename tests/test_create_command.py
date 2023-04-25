@@ -24,7 +24,8 @@ class TestCreateCommand(unittest.TestCase):
         self.assertEqual(args[-2], "temp")
         # check creation of temporary file
         self.assertTrue(Path(path).is_file())
-        path.unlink(missing_ok=True)    # delete the file
+        if path.exists():  # delete the file
+            path.unlink()
 
     def test_create_short_command(self):
         slurminade.set_entry_point(__file__)
@@ -44,4 +45,5 @@ class TestCreateCommand(unittest.TestCase):
         self.assertTrue(test_file_path.is_file())
         with open(test_file_path, "r") as file:
             self.assertEqual(file.readline(), s)
-        test_file_path.unlink(missing_ok=True)   # delete the file
+        if test_file_path.exists():  # delete the file
+            test_file_path.unlink()
