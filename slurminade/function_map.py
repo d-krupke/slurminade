@@ -39,6 +39,11 @@ class FunctionMap:
             file = FunctionMap.entry_point
         path = os.path.normpath(os.path.abspath(file))
         return f"{path}:{func.__name__}"
+    
+    @staticmethod
+    def get_readable_name(func_id: str) -> str:
+        return func_id.split(":")[-1]
+
 
     @staticmethod
     def check_compatibility(func: typing.Callable):

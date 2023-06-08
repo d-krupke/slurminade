@@ -17,10 +17,10 @@ from tempfile import mkstemp
 
 import simple_slurm
 
-from slurminade.conf import _get_conf
-from slurminade.function_map import FunctionMap, get_entry_point
-from slurminade.guard import dispatch_guard
-from slurminade.options import SlurmOptions
+from .conf import _get_conf
+from .function_map import FunctionMap, get_entry_point
+from .guard import dispatch_guard
+from .options import SlurmOptions
 
 
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
@@ -185,11 +185,25 @@ class SlurmDispatcher(Dispatcher):
         conf = _get_conf(special_slurm_opts)
         slurm = simple_slurm.Slurm(**conf)
         return slurm
+    
+    def _task_name(funcs: typing.List[FunctionCall]) -> str:
+        func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
+        if len(funcs) == 1:
+            return f"slurminade: {func_names[0]}"
+        else:
+            if len(func_names)<=3:
+                return f"slurminade[batch]: {func_names}"
+            else:
+                return f"slurminade[batch]: {func_names[:3]}..."
+        
 
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
         dispatch_guard()
+        if "task_name" not in options:
+            funcs = list(funcs)
+            options = {"task_name": self._task_name(funcs), **options}
         slurm = self._create_slurm_api(options)
         command = create_slurminade_command(funcs, self.max_arg_length)
         return slurm.sbatch(command)
