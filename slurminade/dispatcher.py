@@ -189,7 +189,7 @@ class SlurmDispatcher(Dispatcher):
     def _job_name(self, funcs: typing.List[FunctionCall]) -> str:
         func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
         if len(funcs) == 1:
-            return f"slurminade: {func_names[0]}"
+            return f"slurminade:{func_names[0]}"
         else:
             return f"slurminade[batch]:{func_names[0]}..."
         
@@ -198,7 +198,7 @@ class SlurmDispatcher(Dispatcher):
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
         dispatch_guard()
-        if "task_name" not in options:
+        if "job_name" not in options:
             funcs = list(funcs)
             options = {"job_name": self._job_name(funcs), **options}
         slurm = self._create_slurm_api(options)
