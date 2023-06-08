@@ -186,7 +186,7 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         return slurm
     
-    def _task_name(funcs: typing.List[FunctionCall]) -> str:
+    def _job_name(funcs: typing.List[FunctionCall]) -> str:
         func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
         if len(funcs) == 1:
             return f"slurminade: {func_names[0]}"
@@ -203,7 +203,7 @@ class SlurmDispatcher(Dispatcher):
         dispatch_guard()
         if "task_name" not in options:
             funcs = list(funcs)
-            options = {"task_name": self._task_name(funcs), **options}
+            options = {"job_name": self._job_name(funcs), **options}
         slurm = self._create_slurm_api(options)
         command = create_slurminade_command(funcs, self.max_arg_length)
         return slurm.sbatch(command)
