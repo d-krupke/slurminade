@@ -199,6 +199,7 @@ The project is reasonably easy:
 
 ## Changes
 
+* 0.6.1: Bugfixes in naming
 * 0.6.0: Autmatic naming of tasks.
 * 0.5.5: Fixing bug guard bug in subprocess dispatcher.
 * 0.5.4: Dispatched function calls that are too long for the command line now use a temporary file instead.
