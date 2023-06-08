@@ -186,7 +186,7 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         return slurm
     
-    def _job_name(funcs: typing.List[FunctionCall]) -> str:
+    def _job_name(self, funcs: typing.List[FunctionCall]) -> str:
         func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
         if len(funcs) == 1:
             return f"slurminade: {func_names[0]}"
