@@ -191,10 +191,7 @@ class SlurmDispatcher(Dispatcher):
         if len(funcs) == 1:
             return f"slurminade: {func_names[0]}"
         else:
-            if len(func_names)<=3:
-                return f"slurminade[batch]: {func_names}"
-            else:
-                return f"slurminade[batch]: {func_names[:3]}..."
+            return f"slurminade[batch]:{func_names[0]}..."
         
 
     def _dispatch(
