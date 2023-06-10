@@ -48,6 +48,7 @@ Project structure:
 - options.py: Contains a simple data structure to save slurm options.
 """
 
+# flake8: noqa F401
 from .function import slurmify
 from .conf import update_default_configuration, set_default_configuration
 from .guard import set_dispatch_limit, allow_recursive_distribution

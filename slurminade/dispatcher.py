@@ -118,7 +118,7 @@ class Dispatcher(abc.ABC):
         Return true if the dispatcher works sequential. In this case, the dependencies
         are trivially fulfilled. Slurm does not work sequentially, because this
         would destroy its purpose. In some cases however, you do not want to use
-        slurm for compatibility reasons, without chaning the script. In these cases,
+        slurm for compatibility reasons, without changing the script. In these cases,
         this function tells slurminade not to be too strict about dependencies.
         :return: True is tasks are executed sequentially, false if not.
         """
@@ -185,14 +185,13 @@ class SlurmDispatcher(Dispatcher):
         conf = _get_conf(special_slurm_opts)
         slurm = simple_slurm.Slurm(**conf)
         return slurm
-    
+
     def _job_name(self, funcs: typing.List[FunctionCall]) -> str:
         func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
         if len(funcs) == 1:
             return f"slurminade:{func_names[0]}"
         else:
             return f"slurminade[batch]:{func_names[0]}..."
-        
 
     def _dispatch(
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
@@ -232,6 +231,7 @@ class SubprocessDispatcher(Dispatcher):
     don't want to use slurm.
     Despite using subprocesses, it does not parallelize but works sequential.
     """
+
     def __init__(self):
         super().__init__()
         self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
@@ -281,7 +281,9 @@ class DirectCallDispatcher(Dispatcher):
         return True
 
 
-def create_slurminade_command(funcs: typing.Iterable[FunctionCall], max_arg_length: int) -> str:
+def create_slurminade_command(
+    funcs: typing.Iterable[FunctionCall], max_arg_length: int
+) -> str:
     """
     Creates a terminal command that calls the Python module `slurminade.execute` with the
     provided function calls as an argument. If the total length of the function calls
@@ -299,7 +301,7 @@ def create_slurminade_command(funcs: typing.Iterable[FunctionCall], max_arg_leng
     if len(shlex.quote(serialized_calls)) > max_arg_length:
         # The argument is too long, create temporary file for the JSON
         fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
-        with os.fdopen(fd, 'w') as f:
+        with os.fdopen(fd, "w") as f:
             f.write(serialized_calls)
         command += f" temp {shlex.quote(filename)}"
     else:

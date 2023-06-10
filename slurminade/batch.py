@@ -15,6 +15,7 @@ class TaskBuffer:
     A simple container to buffer all the tasks by their options.
     We can only bundle tasks with the same slurm options.
     """
+
     def __init__(self):
         self._tasks = defaultdict(list)
 
@@ -46,6 +47,7 @@ class Batch(Dispatcher):
             f.distribute(i)
     ```
     """
+
     def __init__(self, max_size: int):
         """
         :param max_size: Bundle up to this many calls.

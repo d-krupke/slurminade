@@ -4,7 +4,6 @@ import slurminade
 from slurminade.guard import _DispatchGuard, TooManyDispatchesError, set_dispatch_limit
 
 
-
 @slurminade.slurmify()
 def f():
     pass

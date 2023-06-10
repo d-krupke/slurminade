@@ -108,7 +108,7 @@ class SlurmFunction:
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)], self.special_slurm_opts
         )
-    
+
     def __str__(self) -> str:
         return self.func.__name__
 

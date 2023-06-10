@@ -39,11 +39,10 @@ class FunctionMap:
             file = FunctionMap.entry_point
         path = os.path.normpath(os.path.abspath(file))
         return f"{path}:{func.__name__}"
-    
+
     @staticmethod
     def get_readable_name(func_id: str) -> str:
         return func_id.split(":")[-1]
-
 
     @staticmethod
     def check_compatibility(func: typing.Callable):
@@ -103,9 +102,11 @@ def set_entry_point(entry_point: str) -> None:
     FunctionMap.entry_point = entry_point
     # SlurmFunction.dispatcher.entry_point = entry_point
 
+
 def get_entry_point() -> str:
     if FunctionMap.entry_point is None:
         import __main__
+
         entry_point = __main__.__file__
 
         set_entry_point(entry_point)

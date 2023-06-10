@@ -30,8 +30,8 @@ def delete_g():
 
 
 def get_file_name():
-    filename = os.getenv('PYTEST_CURRENT_TEST')  # doesn't seem to work always
-    filename = filename.split("::")[0] if filename else __file__  #workaround
+    filename = os.getenv("PYTEST_CURRENT_TEST")  # doesn't seem to work always
+    filename = filename.split("::")[0] if filename else __file__  # workaround
     if not os.path.exists(filename):  # sometimes the test folder gets duplicated.
         filename = "/".join(filename.split("/")[1:])
     return os.path.abspath(filename)

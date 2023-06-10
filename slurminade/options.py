@@ -1,6 +1,3 @@
-import typing
-
-
 class SlurmOptions(dict):
     """
     Primarily just a wrapper to allow using the options in a dict as key.
