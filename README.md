@@ -51,10 +51,40 @@ if __name__ == "__main__":
         clean_up.wait_for(jids).distribute()
 ```
 
-> :warning: Always use `Batch` when distributing many tasks. Otherwise, you DDoS your slurm.
+> :warning: Always use `Batch` when distributing many tasks. Slurm jobs have a certain overhead and you do not want to spam your infrastructure with too many jobs.
 
+**What are the limitations of *slurminade*?**
+Slurminade reconstructs the environment by basically loading the code on the slurm node (without the `__main__`-part) and then calling the slurmified function with parameters serialized as JSONSs.
+This means that the code must be written in a common `.py`-file and all (distributed) function arguments must be JSON-serializable.
+Also, the function must not use any global state (e.g., global variables, file or database connections) initalized in the `__main__`-part.
+Additionally, the Python-environment must be available under the same path on the slurm node as slurminade will use the same paths on the slurm node to reconstruct the environment (allowing to use virtual environments).
+
+**Does *slurminade* work with Python 2?**
+No, it is a Python 3 project. We tested it with Python 3.7 and higher.
+
+**Does *slurminade* work with Windows?**
+Probably not, but I never saw a slurm cluster running on Windows.
+The (automatic) slurm-less mode should work on Windows.
+So your code will run, but all function calls will be local.
+
+**Are multi-file projects supported?**
+Yes, as long as the files are available on the slurm node.
+
+**Does *slurminade* work with virtual environments?**
+Yes.
 We recommend to use *slurminade* with [conda](https://docs.conda.io/en/latest/).
 We have not tested it with other virtual environments.
+
+**Can I run my slurmified code outside a slurm environment?**
+Yes, if you do not have slurm, the distrubted functions are run as normal Python function calls.
+This means that you can share the same code with people that do not have slurm.
+It was important to us that the experimental evaluations we run on our slurm cluster can also be run in a common Python environment by reviewers without any changes.
+
+**Can I recieve the return value of a slurmified function?**
+No, the return value is not transmitted back to the caller.
+Note that the distribute-calls are non-blocking, i.e., the function returns immediately.
+Return values could be implemented via a *Promise*-object like for other distributed computing frameworks, but we did not see the need for it yet.
+We are usually saving the results in a database or files, e.g., using [AlgBench](https://github.com/d-krupke/AlgBench).
 
 The code is super simple and open source, don't be afraid to create a fork that fits your own needs.
 
@@ -80,13 +110,16 @@ Currently, all function names must be unique as *slurminade* will only transmit 
 
 ## Don't do:
 
-### Bad: System calls
+### Bad: Non blocking system calls
 ```python
 import slurminade
 import os
+import subprocess
+
 @slurminade.slurmify()
 def run_shell_command():
-    os.system("complex call")
+    # non-blocking system call
+    subprocess.Popen("complex call")
     # BAD! The system call will run outside of slurm! The slurm task directly terminates.
 ```
 instead use
