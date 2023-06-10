@@ -4,8 +4,8 @@ Not relevant for endusers.
 """
 
 import inspect
-import typing
 import os
+import typing
 
 
 class FunctionMap:
@@ -35,7 +35,8 @@ class FunctionMap:
         if file == "<string>":  # on the slurm node, the functions in the entry point
             # are named `<string>`.
             if not FunctionMap.entry_point:
-                raise RuntimeError("No entry point known.")
+                msg = "No entry point known."
+                raise RuntimeError(msg)
             file = FunctionMap.entry_point
         path = os.path.normpath(os.path.abspath(file))
         return f"{path}:{func.__name__}"
@@ -56,7 +57,8 @@ class FunctionMap:
             or func.__name__ == "<lambda>"
             or not inspect.getfile(func)
         ):
-            raise ValueError("Can only slurmify proper functions.")
+            msg = "Can only slurmify proper functions."
+            raise ValueError(msg)
 
     @staticmethod
     def register(func: typing.Callable) -> str:
@@ -68,7 +70,8 @@ class FunctionMap:
         FunctionMap.check_compatibility(func)
         func_id = FunctionMap.get_id(func)
         if func_id in FunctionMap._data:
-            raise RuntimeError("Multiple function definitions!")
+            msg = "Multiple function definitions!"
+            raise RuntimeError(msg)
         FunctionMap._data[func_id] = func
         return func_id
 
@@ -84,7 +87,8 @@ class FunctionMap:
         :return: The return value of the function.
         """
         if func_id not in FunctionMap._data:
-            raise KeyError(f"Function '{func_id}' unknown!")
+            msg = f"Function '{func_id}' unknown!"
+            raise KeyError(msg)
         return FunctionMap._data[func_id](*args, **kwargs)
 
 
@@ -97,7 +101,8 @@ def set_entry_point(entry_point: str) -> None:
     :return: None
     """
     if not os.path.isfile(entry_point) or not entry_point.endswith(".py"):
-        raise ValueError(f"Illegal entry point ({entry_point}).")
+        msg = f"Illegal entry point ({entry_point})."
+        raise ValueError(msg)
     entry_point = os.path.abspath(entry_point)
     FunctionMap.entry_point = entry_point
     # SlurmFunction.dispatcher.entry_point = entry_point

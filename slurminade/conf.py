@@ -11,13 +11,13 @@ def _load_default_conf():
     default_conf_file = os.path.join(Path.home(), ".slurminade_default.json")
     try:
         if os.path.isfile(default_conf_file):
-            with open(default_conf_file, "r") as f:
+            with open(default_conf_file) as f:
                 return json.load(f)
         else:
             return {}
     except Exception as e:
         print(
-            f"slurminade could not open default configuration {default_conf_file}!\n{str(e)}"
+            f"slurminade could not open default configuration {default_conf_file}!\n{e!s}"
         )
     return {}
 

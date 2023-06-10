@@ -1,5 +1,6 @@
-import slurminade
 import datetime
+
+import slurminade
 
 # example with importing a function to be executed by node
 from example_2b import f
@@ -18,4 +19,4 @@ def g(hello_world):
 
 if __name__ == "__main__":
     g.distribute("test f")
-    f.distribute(f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    f.distribute(f"Hello World from slurminade! {datetime.datetime.now()!s}")

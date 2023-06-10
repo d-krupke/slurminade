@@ -13,10 +13,9 @@ __exec_flag = False
 
 def guard_recursive_distribution():
     if __exec_flag:
+        msg = "Cannot distribute a task within a distributed task! (maybe you forgot to guard you script with 'if __name__==\"__main__\":'?)"
         raise RuntimeError(
-            "Cannot distribute a task within a distributed task! "
-            "(maybe you forgot to guard you script with "
-            "'if __name__==\"__main__\":'?)"
+            msg
         )
 
 

@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 import slurminade
-from slurminade.dispatcher import create_slurminade_command, FunctionCall
+from slurminade.dispatcher import FunctionCall, create_slurminade_command
 
 test_file_path = Path("./f_test_file.txt")
 
@@ -21,9 +21,9 @@ class TestCreateCommand(unittest.TestCase):
         command = create_slurminade_command([test_call], 100)
         args = shlex.split(command)
         path = Path(args[-1])
-        self.assertEqual(args[-2], "temp")
+        assert args[-2] == "temp"
         # check creation of temporary file
-        self.assertTrue(Path(path).is_file())
+        assert Path(path).is_file()
         if path.exists():  # delete the file
             path.unlink()
 
@@ -32,7 +32,7 @@ class TestCreateCommand(unittest.TestCase):
         test_call = FunctionCall(f.func_id, [""], {})
         command = create_slurminade_command([test_call], 100000)
         args = shlex.split(command)
-        self.assertEqual(args[-2], "arg")
+        assert args[-2] == "arg"
 
     def test_dispatch_with_temp_file(self):
         slurminade.set_entry_point(__file__)
@@ -43,8 +43,8 @@ class TestCreateCommand(unittest.TestCase):
         slurminade.set_dispatcher(dispatcher)
         s = "test"
         f.distribute(s)
-        self.assertTrue(test_file_path.is_file())
-        with open(test_file_path, "r") as file:
-            self.assertEqual(file.readline(), s)
+        assert test_file_path.is_file()
+        with open(test_file_path) as file:
+            assert file.readline() == s
         if test_file_path.exists():  # delete the file
             test_file_path.unlink()

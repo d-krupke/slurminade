@@ -22,7 +22,6 @@ from .function_map import FunctionMap, get_entry_point
 from .guard import dispatch_guard
 from .options import SlurmOptions
 
-
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
 DEFAULT_MAX_ARG_LENGTH = 100000
 
@@ -62,7 +61,6 @@ class Dispatcher(abc.ABC):
         :param options: The slurm options to be used.
         :return: The job id. Use -1 if not applicable (e.g., because buffered)
         """
-        pass
 
     @abc.abstractmethod
     def srun(
@@ -79,7 +77,6 @@ class Dispatcher(abc.ABC):
         :param simple_slurm_kwargs: Additional options for simple_slurm.
         :return: Job id
         """
-        pass
 
     @abc.abstractmethod
     def sbatch(
@@ -96,7 +93,6 @@ class Dispatcher(abc.ABC):
         :param simple_slurm_kwargs: Additional options for simple_slurm.
         :return: Job id.
         """
-        pass
 
     def __call__(
         self,
@@ -178,7 +174,8 @@ class SlurmDispatcher(Dispatcher):
     def __init__(self):
         super().__init__()
         if not shutil.which("sbatch"):
-            raise RuntimeError("Slurm could not be found.")
+            msg = "Slurm could not be found."
+            raise RuntimeError(msg)
         self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _create_slurm_api(self, special_slurm_opts):
@@ -187,7 +184,7 @@ class SlurmDispatcher(Dispatcher):
         return slurm
 
     def _job_name(self, funcs: typing.List[FunctionCall]) -> str:
-        func_names = list(set(FunctionMap.get_readable_name(f.func_id) for f in funcs))
+        func_names = list({FunctionMap.get_readable_name(f.func_id) for f in funcs})
         if len(funcs) == 1:
             return f"slurminade:{func_names[0]}"
         else:

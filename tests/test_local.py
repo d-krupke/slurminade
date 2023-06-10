@@ -34,13 +34,13 @@ class TestLocal(unittest.TestCase):
     def test_1(self):
         delete_f()
         SlurmFunction.call(f.func_id)
-        self.assertTrue(os.path.exists(f_file))
+        assert os.path.exists(f_file)
         delete_f()
 
     def test_2(self):
         delete_g()
         SlurmFunction.call(g.func_id, x="a", y=2)
-        self.assertTrue(os.path.exists(g_file))
-        with open(g_file, "r") as file:
-            self.assertEqual(file.readline(), "a:2")
+        assert os.path.exists(g_file)
+        with open(g_file) as file:
+            assert file.readline() == "a:2"
         delete_g()

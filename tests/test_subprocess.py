@@ -45,7 +45,7 @@ class TestSubprocess(unittest.TestCase):
 
         delete_f()
         f.distribute()
-        self.assertTrue(os.path.exists(f_file))
+        assert os.path.exists(f_file)
         delete_f()
 
     def test_2(self):
@@ -55,7 +55,7 @@ class TestSubprocess(unittest.TestCase):
 
         delete_g()
         g.distribute(x="a", y=2)
-        self.assertTrue(os.path.exists(g_file))
-        with open(g_file, "r") as file:
-            self.assertEqual(file.readline(), "a:2")
+        assert os.path.exists(g_file)
+        with open(g_file) as file:
+            assert file.readline() == "a:2"
         delete_g()

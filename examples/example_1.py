@@ -1,6 +1,6 @@
-import slurminade
 import datetime
 
+import slurminade
 from slurminade import Batch
 
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")
@@ -14,7 +14,7 @@ def f(hello_world):
 
 
 if __name__ == "__main__":
-    jid = f.distribute(f"Hello World from slurminade! {str(datetime.datetime.now())}")
+    jid = f.distribute(f"Hello World from slurminade! {datetime.datetime.now()!s}")
     with Batch(20) as batch:
         f.distribute("hello 1!")
         f.distribute("hello 2!")

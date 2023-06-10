@@ -48,7 +48,8 @@ class SlurmFunction:
                 self.special_slurm_opts["dependency"] += "," + opt
             else:
                 # Could not extend dependencies because I have no idea what is going on.
-                raise RuntimeError("Key 'dependency' has unexpected type.")
+                msg = "Key 'dependency' has unexpected type."
+                raise RuntimeError(msg)
         else:
             self.special_slurm_opts["dependency"] = opt
 
@@ -72,10 +73,9 @@ class SlurmFunction:
         if isinstance(job_ids, int):
             job_ids = [job_ids]
         if any(jid < 0 for jid in job_ids) and not get_dispatcher().is_sequential():
+            msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(
-                "Invalid job id. Not every dispatcher can directly return"
-                " job ids, because it may not directly distribute them or"
-                " doesn't distribute them at all."
+                msg
             )
         sfunc._add_dependencies(list(job_ids), method)
         return sfunc

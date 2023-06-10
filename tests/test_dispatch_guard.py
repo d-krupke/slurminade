@@ -1,7 +1,7 @@
 import unittest
 
 import slurminade
-from slurminade.guard import _DispatchGuard, TooManyDispatchesError, set_dispatch_limit
+from slurminade.guard import TooManyDispatchesError, _DispatchGuard, set_dispatch_limit
 
 
 @slurminade.slurmify()

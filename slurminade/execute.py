@@ -2,13 +2,13 @@
 This module provides the starting point for the slurm node. You do not have to call
 anything of this file yourself.
 """
+import json
 import os
+import sys
 
-from .guard import prevent_distribution
 from .function import SlurmFunction
 from .function_map import set_entry_point
-import json
-import sys
+from .guard import prevent_distribution
 
 
 def parse_args():
@@ -22,7 +22,8 @@ def parse_args():
             function_calls = json.load(f)
         os.remove(sys.argv[3])  # delete the temp file
     else:
-        raise ValueError("Unknown function call mode. Expected 'arg' or 'temp'.")
+        msg = "Unknown function call mode. Expected 'arg' or 'temp'."
+        raise ValueError(msg)
     assert isinstance(function_calls, list), "Expected a list of dicts"
     return batch_file_path, function_calls
 
@@ -32,7 +33,7 @@ def main():
     batch_file, function_calls = parse_args()
 
     set_entry_point(batch_file)
-    with open(batch_file, "r") as f:
+    with open(batch_file) as f:
         code = "".join(f.readlines())
 
     # Workaround as otherwise __name__ is not defined
