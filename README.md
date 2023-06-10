@@ -16,7 +16,7 @@ configuration specified with slurminade).
 1. Pythonic slurm: Allowing to use slurm in a Pythonic-way, without any shell commands etc.
 2. Compatibility: Scripts can also run without slurm. You can share a script and also people without slurm can execute it without any changes.
 
-We use it to empirically evaluate optimization algorithms for research papers on hundreds of instance that can require 15min each to solve.
+We use it to empirically evaluate optimization algorithms for research papers on hundreds of instances that can require 15min each to solve.
 With slurminade, we can distribute the workload by just changing a few lines of code in our local Python scripts (those that you use for probing and development before running big experiments).
 An example of such a usage can be found here: [Example of an empirical algorithm performance study for graph coloring heuristics using slurminade and AlgBench](https://github.com/d-krupke/AlgBench/tree/main/examples/graph_coloring).
 You will find the [original runner](https://github.com/d-krupke/AlgBench/blob/main/examples/graph_coloring/02_run_benchmark.py) and the [slurmified runner](https://github.com/d-krupke/AlgBench/blob/main/examples/graph_coloring/02_run_benchmark_with_slurminade.py), showing the simplicity of distributing your experiments with slurminade.
@@ -139,7 +139,7 @@ if __name__=="__main__":
     slurminade.sbatch("complex call")  # forwards your call to simple_slurm that is better used for such things.
 ```
 
-### Bad: Global variables
+### Bad: Global variables in the `__main__` part
 
 ```python
 import slurminade
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     FLAG = False
     bad_global.distribute("args", FLAG)
 ```
-> :warning The same is true for any global state such as file or database connections.
+> :warning: The same is true for any global state such as file or database connections. You can use global variables, but be wary of side effects.
 
 ### Error: Complex objects as arguments
 
