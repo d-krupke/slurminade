@@ -1,4 +1,6 @@
-# slurminade
+# slurminade - A decorator-based slurm runner for Python-code.
+
+[![PyPI version](https://badge.fury.io/py/slurminade.svg)](https://badge.fury.io/py/slurminade)
 
 *slurminade* makes using the workload manager [slurm](https://slurm.schedmd.com/documentation.html) with Python beautiful.
 It is based on [simple_slurm](https://github.com/amq92/simple_slurm), but instead of just allowing to comfortably execute shell commands in slurm, it allows to directly distribute Python-functions.
@@ -51,6 +53,10 @@ if __name__ == "__main__":
         clean_up.wait_for(jids).distribute()
 ```
 
+If slurm is not available, `distribute` results in a local function call.
+Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
+*simple_slurm*).
+
 > :warning: Always use `Batch` when distributing many tasks. Slurm jobs have a certain overhead and you do not want to spam your infrastructure with too many jobs.
 
 **What are the limitations of *slurminade*?**
@@ -88,9 +94,7 @@ We are usually saving the results in a database or files, e.g., using [AlgBench]
 
 The code is super simple and open source, don't be afraid to create a fork that fits your own needs.
 
-If slurm is not available, `distribute` results in a local function call.
-Analogous for `srun` and `sbatch` (giving some extra value on top of just forwarding to
-*simple_slurm*).
+
 
 > :warning: Talk with you system administrator or supervisor to get the proper slurm configuration.
 
