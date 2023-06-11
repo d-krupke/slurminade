@@ -131,6 +131,15 @@ frameworks, but we did not see the need for it yet. We are usually saving the
 results in a database or files, e.g., using
 [AlgBench](https://github.com/d-krupke/AlgBench).
 
+**Can I use command line arguments `sys.argv` in my scripts?** Yes, but only in
+your `__main__`-part. The arguments are not transmitted to the slurm nodes as
+they are not part of the function call. You can add these as normal function
+arguments to your slurmified functions if needed. It is important that your
+global objects to not rely on these arguments for initialization, as the
+`__main__`-part is not executed on the slurm node. It is theoretically possible
+to transmit the arguments to the slurm node, but we did not see the need for it.
+Let us know if you need it and we may implement it.
+
 The code is super simple and open source, don't be afraid to create a fork that
 fits your own needs.
 
@@ -307,6 +316,7 @@ The project is reasonably easy:
 
 ## Changes
 
+- 0.6.2: Fixes recursive distribution guard, which seemed to be broken.
 - 0.6.1: Bugfixes in naming
 - 0.6.0: Autmatic naming of tasks.
 - 0.5.5: Fixing bug guard bug in subprocess dispatcher.

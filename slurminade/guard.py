@@ -8,19 +8,19 @@ You can disable these security mechanisms by
 """
 import typing
 
-__exec_flag = False
+_exec_flag = False
 
 
 def guard_recursive_distribution():
-    if __exec_flag:
+    global _exec_flag
+    if _exec_flag:
         msg = "Cannot distribute a task within a distributed task! (maybe you forgot to guard you script with 'if __name__==\"__main__\":'?)"
-        raise RuntimeError(
-            msg
-        )
+        raise RuntimeError(msg)
 
 
 def prevent_distribution():
-    __exec_flag = True
+    global _exec_flag
+    _exec_flag = True
 
 
 def allow_recursive_distribution() -> None:
@@ -28,7 +28,8 @@ def allow_recursive_distribution() -> None:
     Allow recursive distribution. Dangerous!
     :return: None
     """
-    __exec_flag = False
+    global _exec_flag
+    _exec_flag = False
 
 
 class TooManyDispatchesError(RuntimeError):

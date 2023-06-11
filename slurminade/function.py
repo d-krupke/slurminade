@@ -74,9 +74,7 @@ class SlurmFunction:
             job_ids = [job_ids]
         if any(jid < 0 for jid in job_ids) and not get_dispatcher().is_sequential():
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
-            raise RuntimeError(
-                msg
-            )
+            raise RuntimeError(msg)
         sfunc._add_dependencies(list(job_ids), method)
         return sfunc
 
