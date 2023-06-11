@@ -4,14 +4,14 @@ Contains code for bundling function calls together.
 import typing
 from collections import defaultdict
 
-from slurminade.dispatcher import (
+from .dispatcher import (
     Dispatcher,
     FunctionCall,
     get_dispatcher,
     set_dispatcher,
 )
-from slurminade.function import SlurmFunction
-from slurminade.options import SlurmOptions
+from .function import SlurmFunction
+from .options import SlurmOptions
 
 
 class TaskBuffer:

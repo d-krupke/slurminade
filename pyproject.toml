@@ -2,6 +2,32 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "slurminade"
+dynamic = ["version"]
+authors = [
+    { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
+]
+description = "A decorator-based slurm runner."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+]
+keywords=["slurm"]
+dependencies = [
+    "simple_slurm>=0.2.6"
+]
+
+[project.urls]
+Homepage = "https://github.com/d-krupke/slurminade"
+Issues = "https://github.com/d-krupke/slurminade/issues"
+
 [tool.setuptools_scm]
 
 [tool.pytest.ini_options]
