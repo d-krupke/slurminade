@@ -10,16 +10,18 @@ from .options import SlurmOptions
 class SlurmFunction:
     """
     A wrapper around a function that allows it to be distributed to slurm.
-    ```
-    @slurmify(...function specific slurm options...)
-    def f(foobar):
-        print(foobar)
 
-    if __name__=="__main__":
-        assert isinstance(f, SlurmFunction), "f has become a SlurmFunction"
-        jid = f.distribute("hello")
-        f.wait_for(jid).distribute("bye")
-    ```
+    .. code-block:: python
+
+        @slurmify(function specific slurm options)
+        def f(foobar):
+            print(foobar)
+
+        if __name__=="__main__":
+            assert isinstance(f, SlurmFunction), "f has become a SlurmFunction"
+            jid = f.distribute("hello")
+            f.wait_for(jid).distribute("bye")
+
     """
 
     def __init__(
@@ -119,11 +121,13 @@ def slurmify(f=None, **args) -> typing.Callable[[typing.Callable], SlurmFunction
     """
     Decorator: Make a function distributable to slurm.
     Usage:
-    ```
-    @slurmify()
-    def func(a, b):
-        pass
-    ```
+
+    .. code-block:: python
+
+        @slurmify()
+        def func(a, b):
+            pass
+
     :param f: Function
     :param args: Special slurm options for this function.
     :return: A decorated function, callable with slurm.

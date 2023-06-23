@@ -43,13 +43,14 @@ class Batch(Dispatcher):
     """
     The logic to buffer the function calls. It wraps the original dispatcher.
 
-    You can use
-    ```
-    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
-        # run 100x f
-        for i in range(100):
-            f.distribute(i)
-    ```
+    You can use::
+
+        with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+            # run 100x f
+            for i in range(100):
+                f.distribute(i)
+
+    to automatically bundle up to 20 tasks and distribute them.
     """
 
     def __init__(self, max_size: int):

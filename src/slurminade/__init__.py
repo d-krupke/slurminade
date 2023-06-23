@@ -1,41 +1,42 @@
 """
 slurminade allows to distribute function calls to slurm using decorators.
 
-```
-import slurminade
+.. code-block:: python
 
-slurminade.update_default_configuration(partition="alg")  # global options for slurm
+    import slurminade
 
-# If no slurm environment is found, the functions are called directly to make scripts
-# compatible with any environment.
-# You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
+    slurminade.update_default_configuration(partition="alg")  # global options for slurm
 
-# use this decorator to make a function distributable with slurm
-@slurminade.slurmify(constraint="alggen02")  # function specific options can be specified
-def prepare():
-    print("Prepare")
+    # If no slurm environment is found, the functions are called directly to make scripts
+    # compatible with any environment.
+    # You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
-@slurminade.slurmify()
-def f(foobar):
-    print(f"f({foobar})")
+    # use this decorator to make a function distributable with slurm
+    @slurminade.slurmify(constraint="alggen02")  # function specific options can be specified
+    def prepare():
+        print("Prepare")
 
-@slurminade.slurmify()
-def clean_up():
-    print("Clean up")
+    @slurminade.slurmify()
+    def f(foobar):
+        print(f"f({foobar})")
+
+    @slurminade.slurmify()
+    def clean_up():
+        print("Clean up")
 
 
-if __name__ == "__main__":
-    jid = prepare.distribute()
+    if __name__ == "__main__":
+        jid = prepare.distribute()
 
-    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
-        # run 100x f after `prepare` has finished
-        for i in range(100):
-            f.wait_for(jid).distribute(i)
+        with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+            # run 100x f after `prepare` has finished
+            for i in range(100):
+                f.wait_for(jid).distribute(i)
 
-        # clean up after the previous jobs have finished
-        jids = batch.flush()
-        clean_up.wait_for(jids).distribute()
-```
+            # clean up after the previous jobs have finished
+            jids = batch.flush()
+            clean_up.wait_for(jids).distribute()
+
 
 Project structure:
 - batch.py: Contains code for bundling tasks, so we don't spam slurm with too many.

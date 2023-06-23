@@ -13,7 +13,7 @@ The general idea is that the corresponding Python-code exists on both machines,
 thus, the slurm-node can also call the functions of the original code if you
 tell if which one and what arguments to use. This is similar to
 [celery](https://github.com/celery/celery) but you do not need to install
-anything, just make sure the same Python-environment is available the nodes
+anything, just make sure the same Python-environment is available on the nodes
 (usually the case in a proper slurm setup).
 
 Please check the documentation of
@@ -37,7 +37,7 @@ big experiments). An example of such a usage can be found here:
 You will find the
 [original runner](https://github.com/d-krupke/AlgBench/blob/main/examples/graph_coloring/02_run_benchmark.py)
 and the
-[slurmified runner](https://github.com/d-krupke/AlgBench/blob/main/examples/graph_coloring/02_run_benchmark_with_slurminade.py),
+[slurmified runner](https://github.com/d-krupke/AlgBench/blob/main/examples/graph_coloring/02b_run_benchmark_with_slurminade.py),
 showing the simplicity of distributing your experiments with slurminade.
 
 A simple script could look like this:
