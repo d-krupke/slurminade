@@ -64,3 +64,19 @@ from .dispatcher import (
     SubprocessDispatcher,
 )
 from .function_map import set_entry_point
+
+__all__ = [
+    "slurmify",
+    "update_default_configuration",
+    "set_default_configuration",
+    "set_dispatch_limit",
+    "allow_recursive_distribution",
+    "Batch",
+    "srun",
+    "sbatch",
+    "SlurmDispatcher",
+    "set_dispatcher",
+    "get_dispatcher",
+    "TestDispatcher",
+    "SubprocessDispatcher",
+]
