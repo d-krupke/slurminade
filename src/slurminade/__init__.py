@@ -52,7 +52,7 @@ Project structure:
 # flake8: noqa F401
 from .function import slurmify
 from .conf import update_default_configuration, set_default_configuration
-from .guard import set_dispatch_limit, allow_recursive_distribution
+from .guard import set_dispatch_limit, allow_recursive_distribution, disable_warning_on_repeated_flushes
 from .batch import Batch
 from .dispatcher import (
     srun,
@@ -71,6 +71,7 @@ __all__ = [
     "set_default_configuration",
     "set_dispatch_limit",
     "allow_recursive_distribution",
+    "disable_warning_on_repeated_flushes",
     "Batch",
     "srun",
     "sbatch",
