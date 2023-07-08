@@ -345,6 +345,7 @@ The project is reasonably easy:
 Changes
 -------
 
+-  0.7.0: Warning if a Batch is flushed multiple times, as we noticed this to be a common indentation error.
 -  0.6.2: Fixes recursive distribution guard, which seemed to be broken.
 -  0.6.1: Bugfixes in naming
 -  0.6.0: Autmatic naming of tasks.

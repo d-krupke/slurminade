@@ -12,6 +12,7 @@ from .dispatcher import (
 )
 from .function import SlurmFunction
 from .options import SlurmOptions
+from .guard import BatchGuard
 
 
 class TaskBuffer:
@@ -61,12 +62,16 @@ class Batch(Dispatcher):
         self.max_size = max_size
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
+        self._batch_guard = BatchGuard()
 
     def flush(
         self, options: typing.Optional[SlurmOptions] = None
-    ) -> typing.Iterable[int]:
+    ) -> typing.List[int]:
         """
         Distribute all buffered tasks. Return the job ids used.
+        This method is called automatically when the context is exited.
+        However, you may want to call it manually to get the job ids,
+        for example to use them for dependency management with ``wait_for``.
         :param options: Only flush tasks with specific options.
         :return: A list of job ids.
         """
@@ -80,6 +85,7 @@ class Batch(Dispatcher):
 
         else:
             tasks = self._tasks.get(options)
+            self._batch_guard.report_flush(len(tasks))
             while len(tasks) > self.max_size:
                 job_id = self.subdispatcher(tasks[: self.max_size], options)
                 job_ids.append(job_id)
