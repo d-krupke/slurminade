@@ -11,14 +11,19 @@ slurminade allows to distribute function calls to slurm using decorators.
     # compatible with any environment.
     # You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
+
     # use this decorator to make a function distributable with slurm
-    @slurminade.slurmify(constraint="alggen02")  # function specific options can be specified
+    @slurminade.slurmify(
+        constraint="alggen02"
+    )  # function specific options can be specified
     def prepare():
         print("Prepare")
+
 
     @slurminade.slurmify()
     def f(foobar):
         print(f"f({foobar})")
+
 
     @slurminade.slurmify()
     def clean_up():
@@ -52,7 +57,11 @@ Project structure:
 # flake8: noqa F401
 from .function import slurmify
 from .conf import update_default_configuration, set_default_configuration
-from .guard import set_dispatch_limit, allow_recursive_distribution, disable_warning_on_repeated_flushes
+from .guard import (
+    set_dispatch_limit,
+    allow_recursive_distribution,
+    disable_warning_on_repeated_flushes,
+)
 from .batch import Batch
 from .dispatcher import (
     srun,
@@ -80,4 +89,11 @@ __all__ = [
     "get_dispatcher",
     "TestDispatcher",
     "SubprocessDispatcher",
+    "set_entry_point",
 ]
+
+# set default logging
+import logging
+
+logging.getLogger("slurminade").setLevel(logging.INFO)
+logging.getLogger("slurminade").addHandler(logging.StreamHandler())

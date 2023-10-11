@@ -1,9 +1,9 @@
 import datetime
 
-import slurminade
-
 # example with importing a function to be executed by node
 from example_2b import f
+
+import slurminade
 
 slurminade.set_dispatch_limit(2)
 slurminade.update_default_configuration(partition="alg", constraint="alggen02")

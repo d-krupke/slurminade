@@ -1,3 +1,6 @@
+import typing
+
+
 class SlurmOptions(dict):
     """
     Primarily just a wrapper to allow using the options in a dict as key.
@@ -18,3 +21,6 @@ class SlurmOptions(dict):
         if not isinstance(other, SlurmOptions):
             return False
         return hash(self) == hash(other)
+
+    def as_dict(self) -> typing.Dict:
+        return dict(self._items())

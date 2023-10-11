@@ -75,5 +75,3 @@ slurminade.options module
    :members:
    :undoc-members:
    :show-inheritance:
-
-

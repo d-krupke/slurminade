@@ -43,6 +43,25 @@ class FunctionCall:
         """
         return {"func_id": self.func_id, "args": self.args, "kwargs": self.kwargs}
 
+    def __str__(self) -> str:
+        """
+        Return a printable string representation of the call, useful for logging.
+        """
+
+        def arg_to_str(arg):
+            if isinstance(arg, str):
+                return f"'{arg}'"
+            return str(arg)
+
+        short_args = ", ".join(arg_to_str(a) for a in self.args)
+        if len(short_args) > 200:
+            short_args = short_args[:200] + "..."
+        short_kwargs = ", ".join(f"{k}={arg_to_str(v)}" for k, v in self.kwargs.items())
+        if len(short_kwargs) > 200:
+            short_kwargs = short_kwargs[:200] + "..."
+        args = ", ".join(a for a in [short_args, short_kwargs] if a)
+        return f"{FunctionMap.get_readable_name(self.func_id)}({args})"
+
 
 class Dispatcher(abc.ABC):
     """
@@ -67,7 +86,7 @@ class Dispatcher(abc.ABC):
         self,
         command: str,
         conf: typing.Optional[SlurmOptions] = None,
-        simple_slurm_kwargs: dict = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ) -> int:
         """
         Define how you want to execute an `srun` command. This command is directly
@@ -83,7 +102,7 @@ class Dispatcher(abc.ABC):
         self,
         command: str,
         conf: typing.Optional[SlurmOptions] = None,
-        simple_slurm_kwargs: dict = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ) -> int:
         """
         Define how you want to execute an `sbatch` command. The command is scheduled
@@ -93,6 +112,16 @@ class Dispatcher(abc.ABC):
         :param simple_slurm_kwargs: Additional options for simple_slurm.
         :return: Job id.
         """
+
+    def _log_dispatch(self, funcs: typing.List[FunctionCall], options: SlurmOptions):
+        if len(funcs) == 1:
+            logging.getLogger("slurminade").info(
+                f"Dispatching task with options {options}: {funcs[0]}"
+            )
+        else:
+            logging.getLogger("slurminade").info(
+                f"Dispatching task consisting of {len(funcs)} function calls with options {options}: {', '.join([str(f) for f in funcs])}"
+            )
 
     def __call__(
         self,
@@ -107,6 +136,8 @@ class Dispatcher(abc.ABC):
         """
         if isinstance(funcs, FunctionCall):
             funcs = [funcs]
+        funcs = list(funcs)
+        self._log_dispatch(funcs, options)
         return self._dispatch(funcs, options)
 
     def is_sequential(self):
@@ -139,7 +170,7 @@ class TestDispatcher(Dispatcher):
         dispatch_guard()
         funcs = list(funcs)
         command = create_slurminade_command(funcs, self.max_arg_length)
-        print(command)
+        logging.getLogger("slurminade").info(command)
         self.calls.append(funcs)
         self._cleanup(command)
         return -1
@@ -152,12 +183,22 @@ class TestDispatcher(Dispatcher):
         if os.path.exists(filename):
             os.remove(filename)
 
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         self.sruns.append(command)
         print("SRUN", command)
 
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         self.sbatches.append(command)
         print("SBATCH", command)
@@ -196,12 +237,20 @@ class SlurmDispatcher(Dispatcher):
         dispatch_guard()
         if "job_name" not in options:
             funcs = list(funcs)
-            options = {"job_name": self._job_name(funcs), **options}
+            # This is complicated to prevent warnings about the type
+            options = SlurmOptions(**options.as_dict())
+            options["job_name"] = self._job_name(funcs)
         slurm = self._create_slurm_api(options)
         command = create_slurminade_command(funcs, self.max_arg_length)
+        logging.getLogger("slurminade").debug(command)
         return slurm.sbatch(command)
 
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
@@ -210,7 +259,12 @@ class SlurmDispatcher(Dispatcher):
         else:
             return slurm.sbatch(command)
 
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
@@ -241,11 +295,21 @@ class SubprocessDispatcher(Dispatcher):
         os.system(command)
         return -1
 
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         subprocess.run(command, check=True)
 
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         self.srun(command)
 
     def is_sequential(self):
@@ -267,11 +331,21 @@ class DirectCallDispatcher(Dispatcher):
             FunctionMap.call(func.func_id, func.args, func.kwargs)
         return -1
 
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         dispatch_guard()
         subprocess.run(command, check=True)
 
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         self.srun(command)
 
     def is_sequential(self):
@@ -356,7 +430,7 @@ def dispatch(
 def srun(
     command: str,
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
-    simple_slurm_kwargs: dict = None,
+    simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
 ) -> int:
     """
     Call srun with the current dispatcher. This command is directly
@@ -367,6 +441,8 @@ def srun(
     :return: Job id
     """
     if not isinstance(conf, SlurmOptions):
+        if conf is None:
+            conf = {}
         conf = SlurmOptions(**conf)
     return get_dispatcher().srun(command, conf, simple_slurm_kwargs)
 
@@ -374,7 +450,7 @@ def srun(
 def sbatch(
     command: str,
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
-    simple_slurm_kwargs: dict = None,
+    simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
 ) -> int:
     """
     The command is scheduled and the function returns immediately.
@@ -384,5 +460,7 @@ def sbatch(
     :return: Job id.
     """
     if not isinstance(conf, SlurmOptions):
+        if conf is None:
+            conf = {}
         conf = SlurmOptions(**conf)
     return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)

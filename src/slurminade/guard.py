@@ -10,8 +10,8 @@ You can disable these security mechanisms by
 ``allow_recursive_distribution``, ``set_dispatch_limit(None)``, and
 ``disable_warning_for_multiple_flushes``.
 """
-import typing
 import logging
+import typing
 
 _exec_flag = False
 
@@ -105,7 +105,7 @@ class BatchGuard:
         return """
         You repeatedly flushed a batch. There are various scenarios where this
         is done on purpose, but we want to warn you, because it is a common mistake
-        to put the flush call in a loop by wrong indentation, instead of calling it 
+        to put the flush call in a loop by wrong indentation, instead of calling it
         once at the end of your context. If used for dependency management,
         e.g., with `wait_for`, such a mistake can lead to a faulty execution order.
         This warning allows you to quickly call `scancel -u <username>` to cancel
@@ -120,8 +120,9 @@ class BatchGuard:
             return
         self._num_of_flushes += 1
         if self._num_of_flushes == 2 and not self.already_warned:
-                logging.getLogger("slurminade").warning(self._get_error_msg())
-                self.already_warned = True
+            logging.getLogger("slurminade").warning(self._get_error_msg())
+            self.already_warned = True
+
 
 def disable_warning_on_repeated_flushes():
     """

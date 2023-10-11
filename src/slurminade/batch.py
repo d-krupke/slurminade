@@ -1,6 +1,7 @@
 """
 Contains code for bundling function calls together.
 """
+import logging
 import typing
 from collections import defaultdict
 
@@ -11,8 +12,8 @@ from .dispatcher import (
     set_dispatcher,
 )
 from .function import SlurmFunction
-from .options import SlurmOptions
 from .guard import BatchGuard
+from .options import SlurmOptions
 
 
 class TaskBuffer:
@@ -64,9 +65,7 @@ class Batch(Dispatcher):
         self._tasks = TaskBuffer()
         self._batch_guard = BatchGuard()
 
-    def flush(
-        self, options: typing.Optional[SlurmOptions] = None
-    ) -> typing.List[int]:
+    def flush(self, options: typing.Optional[SlurmOptions] = None) -> typing.List[int]:
         """
         Distribute all buffered tasks. Return the job ids used.
         This method is called automatically when the context is exited.
@@ -112,10 +111,20 @@ class Batch(Dispatcher):
             self._tasks.add(func, options)
         return -1
 
-    def srun(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def srun(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         return self.subdispatcher.srun(command, conf, simple_slurm_kwargs)
 
-    def sbatch(self, command: str, conf: dict = None, simple_slurm_kwargs: dict = None):
+    def sbatch(
+        self,
+        command: str,
+        conf: typing.Optional[typing.Dict] = None,
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+    ):
         return self.subdispatcher.sbatch(command, conf, simple_slurm_kwargs)
 
     def __enter__(self):
@@ -129,6 +138,16 @@ class Batch(Dispatcher):
             return
         self.flush()
         set_dispatcher(self.subdispatcher)
+
+    def _log_dispatch(self, funcs: typing.List[FunctionCall], options: SlurmOptions):
+        if len(funcs) == 1:
+            logging.getLogger("slurminade").info(
+                f"Adding task to batch with options {options}: {funcs[0]}"
+            )
+        else:
+            logging.getLogger("slurminade").info(
+                f"Adding {len(funcs)} tasks to batch with options {options}: {', '.join([str(f) for f in funcs])}"
+            )
 
     def __del__(self):
         self.flush()
