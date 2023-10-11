@@ -254,6 +254,7 @@ class SlurmDispatcher(Dispatcher):
         dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
+        logging.getLogger("slurminade").debug("SBATCH %s", command)
         if simple_slurm_kwargs:
             return slurm.sbatch(command, **simple_slurm_kwargs)
         else:
@@ -268,6 +269,7 @@ class SlurmDispatcher(Dispatcher):
         dispatch_guard()
         conf = _get_conf(conf)
         slurm = simple_slurm.Slurm(**conf)
+        logging.getLogger("slurminade").debug("SRUN %s", command)
         if simple_slurm_kwargs:
             return slurm.srun(command, **simple_slurm_kwargs)
         else:
@@ -302,6 +304,7 @@ class SubprocessDispatcher(Dispatcher):
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ):
         dispatch_guard()
+        logging.getLogger("slurminade").debug("SRUN %s", command)
         subprocess.run(command, check=True)
 
     def sbatch(
