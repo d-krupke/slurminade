@@ -95,9 +95,11 @@ call. Analogous for ``srun`` and ``sbatch`` (giving some extra value on
 top of just forwarding to *simple_slurm*).
 
 .. warning::
-   Always use ``Batch`` when distributing many tasks. Slurm
+   Always use ``Batch`` when distributing many small tasks to few nodes. Slurm
    jobs have a certain overhead and you do not want to spam your
-   infrastructure with too many jobs.
+   infrastructure with too many jobs. However, function calls
+   joined by ``Batch`` are considered as a single job by slurm, thus,
+   not shared across nodes.
 
 **What are the limitations of slurminade?** Slurminade reconstructs the
 environment by basically loading the code on the slurm node (without the
