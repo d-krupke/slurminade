@@ -5,24 +5,25 @@ This file saves the default configuration for slurm.
 import json
 import os.path
 from pathlib import Path
+import typing
+
+CONFIG_NAME = ".slurminade_default.json"
+
+__default_conf: typing.Dict = {}
 
 
-def _load_default_conf():
-    default_conf_file = os.path.join(Path.home(), ".slurminade_default.json")
+def _load_conf(path):
     try:
-        if os.path.isfile(default_conf_file):
-            with open(default_conf_file) as f:
+        if os.path.isfile(path):
+            with open(path) as f:
                 return json.load(f)
         else:
             return {}
     except Exception as e:
         print(
-            f"slurminade could not open default configuration {default_conf_file}!\n{e!s}"
+            f"slurminade could not open default configuration {path}!\n{e!s}"
         )
     return {}
-
-
-__default_conf = _load_default_conf()
 
 
 def update_default_configuration(conf=None, **kwargs):
@@ -30,6 +31,18 @@ def update_default_configuration(conf=None, **kwargs):
         __default_conf.update(conf)
     if kwargs:
         __default_conf.update(kwargs)
+
+
+def _load_default_conf():
+    path = os.path.join(Path.home(), CONFIG_NAME)
+    update_default_configuration(_load_conf(path))
+    if "XDG_CONFIG_HOME" in os.environ.keys():
+        path = os.path.join(os.environ["XDG_CONFIG_HOME"], "slurminade", CONFIG_NAME)
+        update_default_configuration(_load_conf(path))
+    update_default_configuration(_load_conf(CONFIG_NAME))
+
+
+_load_default_conf()
 
 
 def set_default_configuration(conf=None, **kwargs):
