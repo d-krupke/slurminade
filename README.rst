@@ -303,6 +303,12 @@ arguments for *simple_slurm*. For example
      "partition": "alg"
    }
 
+The current version checks the following files and overwrites values in the following order:
+
+1. ``~/.slurminade_default.json``
+2. ``~/$XDG_CONFIG_HOME/slurminade/.slurminade_default.json``
+3. ``./.slurminade_default.json``
+
 Debugging
 ---------
 
