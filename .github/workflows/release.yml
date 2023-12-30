@@ -16,6 +16,8 @@ jobs:
     steps:
       # retrieve your distributions here
       - uses: actions/checkout@master
+        with:
+          lfs: false
       - uses: actions/setup-python@v4
       - name: Build SDist and wheel
         run: pipx run build
