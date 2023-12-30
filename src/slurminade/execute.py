@@ -3,9 +3,8 @@ This module provides the starting point for the slurm node. You do not have to c
 anything of this file yourself.
 """
 import json
-import os
-import sys
 import pathlib
+import sys
 
 from .function import SlurmFunction
 from .function_map import set_entry_point
@@ -13,7 +12,9 @@ from .guard import prevent_distribution
 
 
 def parse_args():
-    batch_file_path = pathlib.Path(sys.argv[1])  # the file with the code (function definition)
+    batch_file_path = pathlib.Path(
+        sys.argv[1]
+    )  # the file with the code (function definition)
     if not batch_file_path.exists():
         msg = "Batch file does not exist.\n"
         msg += f" File: {batch_file_path}\n"

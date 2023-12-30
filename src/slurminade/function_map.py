@@ -5,9 +5,9 @@ Not relevant for endusers.
 
 import inspect
 import os
-import typing
-import typing
 import pathlib
+import typing
+
 
 class FunctionMap:
     """
