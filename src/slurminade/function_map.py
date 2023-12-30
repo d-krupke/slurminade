@@ -6,7 +6,8 @@ Not relevant for endusers.
 import inspect
 import os
 import typing
-
+import typing
+import pathlib
 
 class FunctionMap:
     """
@@ -92,7 +93,7 @@ class FunctionMap:
         return FunctionMap._data[func_id](*args, **kwargs)
 
 
-def set_entry_point(entry_point: str) -> None:
+def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:
     """
     This function usually is not necessary for endusers.
     Set a manual entry point. This can allow you to use slurmify from the interactive
@@ -100,11 +101,11 @@ def set_entry_point(entry_point: str) -> None:
     :param entry_point: A path to the entry point file.
     :return: None
     """
-    if not os.path.isfile(entry_point) or not entry_point.endswith(".py"):
+    if not os.path.isfile(entry_point) or not str(entry_point).endswith(".py"):
         msg = f"Illegal entry point ({entry_point})."
         raise ValueError(msg)
     entry_point = os.path.abspath(entry_point)
-    FunctionMap.entry_point = entry_point
+    FunctionMap.entry_point = str(entry_point)
     # SlurmFunction.dispatcher.entry_point = entry_point
 
 
@@ -115,4 +116,5 @@ def get_entry_point() -> str:
         entry_point = __main__.__file__
 
         set_entry_point(entry_point)
+    assert FunctionMap.entry_point is not None
     return FunctionMap.entry_point
