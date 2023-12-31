@@ -74,6 +74,13 @@ class SlurmFunction:
         sfunc = SlurmFunction(self.special_slurm_opts, self.func, self.func_id)
         if isinstance(job_ids, int):
             job_ids = [job_ids]
+        else:
+            job_ids = list(job_ids)  # make sure it is a list
+        if not job_ids and not get_dispatcher().is_sequential():
+            msg = "Creating a dependency on an empty list of job ids."
+            msg += " This is probably an error in your code."
+            msg += " Maybe you are using `Batch` but flush outside of the `with` block?"
+            raise RuntimeError(msg)
         if any(jid < 0 for jid in job_ids) and not get_dispatcher().is_sequential():
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(msg)

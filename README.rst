@@ -353,6 +353,7 @@ The project is reasonably easy:
 Changes
 -------
 
+-  0.8.1: Bugfix and automatic detection of wrong usage when using ``Batch`` with ``wait_for``.
 -  0.8.0: Added extensive logging and improved typing.
 -  0.7.0: Warning if a Batch is flushed multiple times, as we noticed this to be a common indentation error.
 -  0.6.2: Fixes recursive distribution guard, which seemed to be broken.
