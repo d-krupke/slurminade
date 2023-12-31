@@ -379,7 +379,7 @@ Changes
 
    -  Lots of experiments on finding the right interface.
 
-Contributores
+Contributors
 -------------
 
 This project is developed at the Algorithms Group at TU Braunschweig,
@@ -393,3 +393,10 @@ Further contributors are Matthias Konitzny and Patrick Blumenberg.
 
 .. |License| image:: https://img.shields.io/github/license/d-krupke/slurminade
    :target: https://github.com/d-krupke/slurminade
+
+
+Similar Projects
+----------------
+
+* This project is greatly inspired by [Celery](https://github.com/celery/celery), but does not require any additional infrastructure except for slurm.
+* If you want a more powerful library to, e.g., also distribute lambdas or functions with complex arguments, check out [submitit](https://github.com/facebookincubator/submitit/). It is a great project, and we may use it as a backend in the future. However, it does not support the slurm-less mode and can easily hide non-deterministic errors. Slurminade on the other hand is restricted on purpose to write reproducible scripts that can also be run without slurm.
