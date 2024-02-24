@@ -94,6 +94,6 @@ __all__ = [
 
 # set default logging
 import logging
-
-logging.getLogger("slurminade").setLevel(logging.INFO)
-logging.getLogger("slurminade").addHandler(logging.StreamHandler())
+import sys
+# Set up the root logger to print to stdout by default
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
