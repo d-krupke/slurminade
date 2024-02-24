@@ -59,6 +59,10 @@ A simple script could look like this:
    # compatible with any environment.
    # You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
+   @slurminade.node_setup
+   def setup():
+       print("I will run automatically on every slurm node at the beginning!")
+
 
    # use this decorator to make a function distributable with slurm
    @slurminade.slurmify(
