@@ -59,6 +59,10 @@ A simple script could look like this:
    # compatible with any environment.
    # You can enforce slurm with `slurminade.set_dispatcher(slurminade.SlurmDispatcher())`
 
+   @slurminade.node_setup
+   def setup():
+       print("I will run automatically on every slurm node at the beginning!")
+
 
    # use this decorator to make a function distributable with slurm
    @slurminade.slurmify(
@@ -353,6 +357,7 @@ The project is reasonably easy:
 Changes
 -------
 
+-  0.9.0: Lots of improvements.
 -  0.8.1: Bugfix and automatic detection of wrong usage when using ``Batch`` with ``wait_for``.
 -  0.8.0: Added extensive logging and improved typing.
 -  0.7.0: Warning if a Batch is flushed multiple times, as we noticed this to be a common indentation error.

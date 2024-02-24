@@ -15,10 +15,12 @@ import typing
 
 _exec_flag = False
 
+def on_slurm_node():
+    global _exec_flag
+    return _exec_flag
 
 def guard_recursive_distribution():
-    global _exec_flag
-    if _exec_flag:
+    if on_slurm_node():
         msg = """
         You tried to distribute a task recursively. This is not allowed by default,
         because it probably indicates a bug in your code. To save you from accidentally

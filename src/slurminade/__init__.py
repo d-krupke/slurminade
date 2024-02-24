@@ -73,6 +73,7 @@ from .dispatcher import (
     SubprocessDispatcher,
 )
 from .function_map import set_entry_point
+from .node_setup import node_setup
 
 __all__ = [
     "slurmify",
@@ -90,10 +91,12 @@ __all__ = [
     "TestDispatcher",
     "SubprocessDispatcher",
     "set_entry_point",
+    "node_setup",
 ]
 
 # set default logging
 import logging
+import sys
 
-logging.getLogger("slurminade").setLevel(logging.INFO)
-logging.getLogger("slurminade").addHandler(logging.StreamHandler())
+# Set up the root logger to print to stdout by default
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
