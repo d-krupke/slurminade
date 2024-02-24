@@ -4,8 +4,11 @@ Not relevant for endusers.
 """
 
 import inspect
+import json
 import os
 import pathlib
+import subprocess
+import sys
 import typing
 
 
@@ -21,6 +24,7 @@ class FunctionMap:
     # slurminade will set this value in the beginning to reconstruct it.
     entry_point: typing.Optional[str] = None
     _data = {}
+    _ids = set()
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
@@ -91,6 +95,27 @@ class FunctionMap:
             msg = f"Function '{func_id}' unknown!"
             raise KeyError(msg)
         return FunctionMap._data[func_id](*args, **kwargs)
+
+    @staticmethod
+    def check_id(func_id: str) -> bool:
+        if func_id in FunctionMap._ids:
+            return True
+        cmd = [
+            sys.executable,
+            "-m",
+            "slurminade.execute",
+            "--root",
+            get_entry_point(),
+            "--listfuncs",
+        ]
+        out = subprocess.check_output(cmd).decode()
+        ids = json.loads(out)
+        FunctionMap._ids = set(ids)
+        return func_id in FunctionMap._ids
+
+    @staticmethod
+    def get_all_ids() -> typing.List[str]:
+        return list(FunctionMap._data.keys())
 
 
 def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:

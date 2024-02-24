@@ -134,7 +134,7 @@ class Batch(Dispatcher):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
-            print("Aborted due to exception.")
+            logging.getLogger("slurminade").error("Aborted due to exception.")
             return
         self.flush()
         set_dispatcher(self.subdispatcher)

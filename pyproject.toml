@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "slurminade"
-dynamic = ["version"]
+version = "0.4.0"
 authors = [
     { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
 ]
@@ -21,14 +21,14 @@ classifiers = [
 ]
 keywords=["slurm"]
 dependencies = [
-    "simple_slurm>=0.2.6"
+    "simple_slurm>=0.2.6",
+    "click",
 ]
 
 [project.urls]
 Homepage = "https://github.com/d-krupke/slurminade"
 Issues = "https://github.com/d-krupke/slurminade/issues"
 
-[tool.setuptools_scm]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -367,19 +367,23 @@ def create_slurminade_command(
     :param max_arg_length: The maximum allowed length of a command line argument.
     :returns: A string representing the command to be executed in the terminal.
     """
-    command = f"{sys.executable} -m slurminade.execute {shlex.quote(get_entry_point())}"
+    command = f"{sys.executable} -m slurminade.execute --root {shlex.quote(get_entry_point())}"
 
     # Serialize function calls as JSON
-    serialized_calls = json.dumps([f.to_json() for f in funcs])
+    json_calls = json.dumps([f.to_json() for f in funcs])
+    serialized_calls = shlex.quote(json_calls)
 
-    if len(shlex.quote(serialized_calls)) > max_arg_length:
+    if len(serialized_calls) > max_arg_length:
         # The argument is too long, create temporary file for the JSON
         fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
+        logging.getLogger("slurminade").info(
+            f"Long function calls. Serializing function calls to temporary file {filename}"
+        )
         with os.fdopen(fd, "w") as f:
-            f.write(serialized_calls)
-        command += f" temp {shlex.quote(filename)}"
+            f.write(json_calls)
+        command += f" --fromfile {filename}"
     else:
-        command += f" arg {shlex.quote(serialized_calls)}"
+        command += f" --calls {serialized_calls}"
     return command
 
 
@@ -427,6 +431,11 @@ def dispatch(
     :param options: The slurm options to be used.
     :return: The job id.
     """
+    funcs = list(funcs) if not isinstance(funcs, FunctionCall) else [funcs]
+    for func in funcs:
+        if not FunctionMap.check_id(func.func_id):
+            msg = f"Function '{func.func_id}' cannot be called from the given entry point."
+            raise KeyError(msg)
     return get_dispatcher()(funcs, options)
 
 

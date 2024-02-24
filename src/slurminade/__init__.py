@@ -95,5 +95,6 @@ __all__ = [
 # set default logging
 import logging
 import sys
+
 # Set up the root logger to print to stdout by default
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
