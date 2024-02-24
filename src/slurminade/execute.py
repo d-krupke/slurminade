@@ -51,12 +51,9 @@ def main():
     with open(batch_file) as f:
         code = "".join(f.readlines())
 
-    # Workaround as otherwise __name__ is not defined
-    global __name__
-    __name__ = None
-
     glob = dict(globals())
     glob["__file__"] = batch_file
+    glob["__name__"] = None
     exec(code, glob)
 
     # Execute the functions
