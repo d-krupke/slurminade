@@ -5,10 +5,7 @@ from pathlib import Path
 
 import click
 
-from .conf import update_default_configuration
-from .dispatcher import set_dispatcher
-from .function import slurmify
-from .function_map import set_entry_point
+from slurminade import slurmify
 
 
 @slurmify()
@@ -29,7 +26,9 @@ def check_slurm(partition, constraint):
     Check if the code is running on a slurm node.
     """
     # enforce slurm
-    from .dispatcher import SlurmDispatcher
+    from slurminade.conf import update_default_configuration
+    from slurminade.dispatcher import SlurmDispatcher, set_dispatcher
+    from slurminade.function_map import set_entry_point
 
     set_dispatcher(SlurmDispatcher())
     print("Setting entry point to ", __file__)
@@ -47,9 +46,7 @@ def check_slurm(partition, constraint):
         _write_to_file.distribute_and_wait(tmp_file_path, "test")
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
         with open(tmp_file_path) as file:
             content = file.readlines()
             print(
@@ -67,9 +64,7 @@ def check_slurm(partition, constraint):
             time.sleep(1)
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
         with open(tmp_file_path) as file:
             content = file.readlines()
             print(

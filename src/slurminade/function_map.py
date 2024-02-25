@@ -4,11 +4,11 @@ Not relevant for endusers.
 """
 
 import inspect
+import logging
 import os
 import pathlib
 import typing
 from pathlib import Path
-import logging
 
 from .execute_cmds import call_slurminade_to_get_function_ids
 
@@ -102,7 +102,11 @@ class FunctionMap:
         if func_id in FunctionMap._ids:
             return True
         FunctionMap._ids = call_slurminade_to_get_function_ids(get_entry_point())
-        logging.getLogger("slurminade").info("Entry point '%s' has functions %s", get_entry_point(), list(FunctionMap._ids))
+        logging.getLogger("slurminade").info(
+            "Entry point '%s' has functions %s",
+            get_entry_point(),
+            list(FunctionMap._ids),
+        )
         return func_id in FunctionMap._ids
 
     @staticmethod
