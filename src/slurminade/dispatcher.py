@@ -5,62 +5,24 @@ This allows to change the behaviour of the distribution, e.g., we use it for bat
 Batch simply wraps the dispatcher by a buffered version.
 """
 import abc
-import json
 import logging
 import os
 import shlex
 import shutil
 import subprocess
-import sys
 import typing
-from tempfile import mkstemp
 
 import simple_slurm
 
 from .conf import _get_conf
+from .execute_cmds import create_slurminade_command
+from .function_call import FunctionCall
 from .function_map import FunctionMap, get_entry_point
 from .guard import dispatch_guard
 from .options import SlurmOptions
 
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
 DEFAULT_MAX_ARG_LENGTH = 100000
-
-
-class FunctionCall:
-    """
-    A function call to be dispatched.
-    """
-
-    def __init__(self, func_id, args, kwargs):
-        self.func_id = func_id  # the function id, as in FunctionMap
-        self.args = args  # the positional arguments for the call
-        self.kwargs = kwargs  # the keyword arguments for the call
-
-    def to_json(self) -> typing.Dict:
-        """
-        Convert call to a json object that can be passed to slurm.
-        :return: json object.
-        """
-        return {"func_id": self.func_id, "args": self.args, "kwargs": self.kwargs}
-
-    def __str__(self) -> str:
-        """
-        Return a printable string representation of the call, useful for logging.
-        """
-
-        def arg_to_str(arg):
-            if isinstance(arg, str):
-                return f"'{arg}'"
-            return str(arg)
-
-        short_args = ", ".join(arg_to_str(a) for a in self.args)
-        if len(short_args) > 200:
-            short_args = short_args[:200] + "..."
-        short_kwargs = ", ".join(f"{k}={arg_to_str(v)}" for k, v in self.kwargs.items())
-        if len(short_kwargs) > 200:
-            short_kwargs = short_kwargs[:200] + "..."
-        args = ", ".join(a for a in [short_args, short_kwargs] if a)
-        return f"{FunctionMap.get_readable_name(self.func_id)}({args})"
 
 
 class Dispatcher(abc.ABC):
@@ -72,7 +34,10 @@ class Dispatcher(abc.ABC):
 
     @abc.abstractmethod
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         """
         Define how to dispatch a number of function calls.
@@ -165,11 +130,16 @@ class TestDispatcher(Dispatcher):
         self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         dispatch_guard()
         funcs = list(funcs)
-        command = create_slurminade_command(funcs, self.max_arg_length)
+        command = create_slurminade_command(
+            get_entry_point(), funcs, self.max_arg_length
+        )
         logging.getLogger("slurminade").info(command)
         self.calls.append(funcs)
         self._cleanup(command)
@@ -232,7 +202,10 @@ class SlurmDispatcher(Dispatcher):
             return f"slurminade[batch]:{func_names[0]}..."
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         dispatch_guard()
         if "job_name" not in options:
@@ -241,8 +214,12 @@ class SlurmDispatcher(Dispatcher):
             options = SlurmOptions(**options.as_dict())
             options["job_name"] = self._job_name(funcs)
         slurm = self._create_slurm_api(options)
-        command = create_slurminade_command(funcs, self.max_arg_length)
+        command = create_slurminade_command(
+            get_entry_point(), funcs, self.max_arg_length
+        )
         logging.getLogger("slurminade").debug(command)
+        if block:
+            return slurm.srun(command)
         return slurm.sbatch(command)
 
     def sbatch(
@@ -293,7 +270,9 @@ class SubprocessDispatcher(Dispatcher):
         self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
     ) -> int:
         dispatch_guard()
-        command = create_slurminade_command(funcs, self.max_arg_length)
+        command = create_slurminade_command(
+            get_entry_point(), funcs, self.max_arg_length
+        )
         os.system(command)
         return -1
 
@@ -355,38 +334,6 @@ class DirectCallDispatcher(Dispatcher):
         return True
 
 
-def create_slurminade_command(
-    funcs: typing.Iterable[FunctionCall], max_arg_length: int
-) -> str:
-    """
-    Creates a terminal command that calls the Python module `slurminade.execute` with the
-    provided function calls as an argument. If the total length of the function calls
-    exceeds the maximum allowed length of a command line argument, a temporary file is
-    created to pass the function calls instead.
-    :param funcs: The function calls to be dispatched.
-    :param max_arg_length: The maximum allowed length of a command line argument.
-    :returns: A string representing the command to be executed in the terminal.
-    """
-    command = f"{sys.executable} -m slurminade.execute --root {shlex.quote(get_entry_point())}"
-
-    # Serialize function calls as JSON
-    json_calls = json.dumps([f.to_json() for f in funcs])
-    serialized_calls = shlex.quote(json_calls)
-
-    if len(serialized_calls) > max_arg_length:
-        # The argument is too long, create temporary file for the JSON
-        fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
-        logging.getLogger("slurminade").info(
-            f"Long function calls. Serializing function calls to temporary file {filename}"
-        )
-        with os.fdopen(fd, "w") as f:
-            f.write(json_calls)
-        command += f" --fromfile {filename}"
-    else:
-        command += f" --calls {serialized_calls}"
-    return command
-
-
 # The current dispatcher. Use with `get_dispatcher` and `set_dispatcher`.
 __dispatcher: typing.Optional[Dispatcher] = None
 
@@ -424,6 +371,7 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
 def dispatch(
     funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
     options: SlurmOptions,
+    block: bool = False,
 ) -> int:
     """
     Distribute function calls with the current dispatcher.

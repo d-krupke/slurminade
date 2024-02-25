@@ -9,8 +9,8 @@ from pathlib import Path
 
 import click
 
-from .function import FunctionMap, SlurmFunction
-from .function_map import set_entry_point
+from .function import SlurmFunction
+from .function_map import FunctionMap, set_entry_point
 from .guard import prevent_distribution
 
 

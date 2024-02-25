@@ -4,12 +4,12 @@ Not relevant for endusers.
 """
 
 import inspect
-import json
 import os
 import pathlib
-import subprocess
-import sys
 import typing
+from pathlib import Path
+
+from .execute_cmds import call_slurminade_to_get_function_ids
 
 
 class FunctionMap:
@@ -100,17 +100,7 @@ class FunctionMap:
     def check_id(func_id: str) -> bool:
         if func_id in FunctionMap._ids:
             return True
-        cmd = [
-            sys.executable,
-            "-m",
-            "slurminade.execute",
-            "--root",
-            get_entry_point(),
-            "--listfuncs",
-        ]
-        out = subprocess.check_output(cmd).decode()
-        ids = json.loads(out)
-        FunctionMap._ids = set(ids)
+        FunctionMap._ids = call_slurminade_to_get_function_ids(get_entry_point())
         return func_id in FunctionMap._ids
 
     @staticmethod
@@ -126,15 +116,16 @@ def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:
     :param entry_point: A path to the entry point file.
     :return: None
     """
-    if not os.path.isfile(entry_point) or not str(entry_point).endswith(".py"):
+    entry_point = Path(entry_point)
+    if not entry_point.is_file() or not str(entry_point).endswith(".py"):
         msg = f"Illegal entry point ({entry_point})."
         raise ValueError(msg)
-    entry_point = os.path.abspath(entry_point)
+    entry_point = entry_point.resolve()
     FunctionMap.entry_point = str(entry_point)
     # SlurmFunction.dispatcher.entry_point = entry_point
 
 
-def get_entry_point() -> str:
+def get_entry_point() -> Path:
     if FunctionMap.entry_point is None:
         import __main__
 
@@ -142,4 +133,8 @@ def get_entry_point() -> str:
 
         set_entry_point(entry_point)
     assert FunctionMap.entry_point is not None
-    return FunctionMap.entry_point
+    path = Path(FunctionMap.entry_point)
+    if not path.exists():
+        msg = f"Entry point {path} does not exist."
+        raise FileNotFoundError(msg)
+    return path

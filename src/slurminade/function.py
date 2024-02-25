@@ -1,10 +1,21 @@
 import inspect
 import typing
+from enum import Enum
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap
 from .guard import guard_recursive_distribution
 from .options import SlurmOptions
+
+
+class CallPolicy(Enum):
+    """
+    Policy for the call of a function.
+    """
+
+    LOCALLY = 0
+    DISTRIBUTED = 1
+    DISTRIBUTED_BLOCKING = 2
 
 
 class SlurmFunction:
@@ -25,11 +36,16 @@ class SlurmFunction:
     """
 
     def __init__(
-        self, special_slurm_opts: typing.Dict, func: typing.Callable, func_id: str
+        self,
+        special_slurm_opts: typing.Dict,
+        func: typing.Callable,
+        func_id: str,
+        call_policy: CallPolicy = CallPolicy.LOCALLY,
     ):
         self.special_slurm_opts = SlurmOptions(**special_slurm_opts)
         self.func = func
         self.func_id = func_id
+        self.call_policy = call_policy
 
     def update_options(self, conf: typing.Dict[str, typing.Any]):
         self.special_slurm_opts.update(conf)
@@ -72,10 +88,9 @@ class SlurmFunction:
         :return: Chainable slurm function object.
         """
         sfunc = SlurmFunction(self.special_slurm_opts, self.func, self.func_id)
-        if isinstance(job_ids, int):
-            job_ids = [job_ids]
-        else:
-            job_ids = list(job_ids)  # make sure it is a list
+        job_ids = (
+            [job_ids] if isinstance(job_ids, int) else list(job_ids)
+        )  # make sure it is a list
         if not job_ids and not get_dispatcher().is_sequential():
             msg = "Creating a dependency on an empty list of job ids."
             msg += " This is probably an error in your code."
@@ -100,7 +115,15 @@ class SlurmFunction:
         :param kwargs: Keyword arguments.
         :return: The return value of the function.
         """
-        return self.func(*args, **kwargs)
+        if self.call_policy == CallPolicy.LOCALLY:
+            return self.run_locally(*args, **kwargs)
+        elif self.call_policy == CallPolicy.DISTRIBUTED:
+            return self.distribute(*args, **kwargs)
+        elif self.call_policy == CallPolicy.DISTRIBUTED_BLOCKING:
+            return self.distribute_and_wait(*args, **kwargs)
+        else:
+            msg = "Unknown call policy."
+            raise RuntimeError(msg)
 
     def distribute(self, *args, **kwargs) -> int:
         """
@@ -113,8 +136,34 @@ class SlurmFunction:
         self._check(args, kwargs)
         guard_recursive_distribution()
         return dispatch(
-            [FunctionCall(self.func_id, args, kwargs)], self.special_slurm_opts
+            [FunctionCall(self.func_id, args, kwargs)],
+            self.special_slurm_opts,
+            block=False,
         )
+
+    def distribute_and_wait(self, *args, **kwargs) -> int:
+        """
+        Distribute the function and wait for it to finish.
+        :param args: The positional arguments.
+        :param kwargs: The keyword arguments.
+        :return: The job id.
+        """
+        self._check(args, kwargs)
+        guard_recursive_distribution()
+        return dispatch(
+            [FunctionCall(self.func_id, args, kwargs)],
+            self.special_slurm_opts,
+            block=True,
+        )
+
+    def run_locally(self, *args, **kwargs):
+        """
+        Call the function locally.
+        `f.local("hello")`
+        Call with function arguments.
+        :return: The return value of the function.
+        """
+        return self.func(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.func.__name__
@@ -124,7 +173,9 @@ class SlurmFunction:
         return FunctionMap.call(func_id, args, kwargs)
 
 
-def slurmify(f=None, **args) -> typing.Callable[[typing.Callable], SlurmFunction]:
+def slurmify(
+    f=None, **args
+) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
     """
     Decorator: Make a function distributable to slurm.
     Usage:

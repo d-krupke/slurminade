@@ -117,6 +117,7 @@ class Batch(Dispatcher):
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ):
+        conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.srun(command, conf, simple_slurm_kwargs)
 
     def sbatch(
@@ -125,6 +126,7 @@ class Batch(Dispatcher):
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ):
+        conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.sbatch(command, conf, simple_slurm_kwargs)
 
     def __enter__(self):
