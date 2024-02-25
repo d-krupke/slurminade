@@ -2,7 +2,6 @@
 The commands that can be understood by execute.py
 """
 
-from .function_call import FunctionCall
 import json
 import logging
 import os
@@ -12,6 +11,9 @@ import sys
 import typing
 from pathlib import Path
 from tempfile import mkstemp
+
+from .function_call import FunctionCall
+
 
 def create_slurminade_command(
     entry_point: Path, funcs: typing.Iterable[FunctionCall], max_arg_length: int

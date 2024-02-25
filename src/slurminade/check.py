@@ -1,22 +1,25 @@
-import click
-import tempfile
 import socket
+import tempfile
 import time
 from pathlib import Path
 
-from .dispatcher import set_dispatcher
+import click
+
 from .conf import update_default_configuration
-from .function_map import set_entry_point
+from .dispatcher import set_dispatcher
 from .function import slurmify
+from .function_map import set_entry_point
+
 
 @slurmify()
 def _write_to_file(path, content):
     # get hostname and write it to the file
     hostname = socket.gethostname()
     with open(path, "w") as file:
-        file.write(content+"\n"+hostname)
+        file.write(content + "\n" + hostname)
     # wait a second for the file to be written
     time.sleep(1)
+
 
 @click.command()
 @click.option("--partition", default=None, help="The partition to use.")
@@ -27,6 +30,7 @@ def check_slurm(partition, constraint):
     """
     # enforce slurm
     from .dispatcher import SlurmDispatcher
+
     set_dispatcher(SlurmDispatcher())
     set_entry_point(__file__)
 
@@ -41,10 +45,16 @@ def check_slurm(partition, constraint):
         tmp_file_path = tmpdir + "/check_1.txt"
         _write_to_file.distribute_and_wait(tmp_file_path, "test")
         if not Path(tmp_file_path).exists():
-            raise Exception("Slurminade failed: The file was not written to the temporary directory.")
+            msg = "Slurminade failed: The file was not written to the temporary directory."
+            raise Exception(
+                msg
+            )
         with open(tmp_file_path) as file:
             content = file.readlines()
-            print("Slurminade check 1 successful. Test was run on node ", content[1].strip())
+            print(
+                "Slurminade check 1 successful. Test was run on node ",
+                content[1].strip(),
+            )
 
         # Check 2
         tmp_file_path = tmpdir + "/check_2.txt"
@@ -55,10 +65,16 @@ def check_slurm(partition, constraint):
                 break
             time.sleep(1)
         if not Path(tmp_file_path).exists():
-            raise Exception("Slurminade failed: The file was not written to the temporary directory.")
+            msg = "Slurminade failed: The file was not written to the temporary directory."
+            raise Exception(
+                msg
+            )
         with open(tmp_file_path) as file:
             content = file.readlines()
-            print("Slurminade check 2 successful. Test was run on node ", content[1].strip())
+            print(
+                "Slurminade check 2 successful. Test was run on node ",
+                content[1].strip(),
+            )
 
 
 if __name__ == "__main__":
