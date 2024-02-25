@@ -42,9 +42,11 @@ def check_slurm(partition, constraint):
 
     # create a temporary folder for the slurm check
     with tempfile.TemporaryDirectory(dir=".") as tmpdir:
+        tmpdir = Path(tmpdir).resolve()
+        assert Path(tmpdir).exists()
         # Check 1
-        tmp_file_path = tmpdir + "/check_1.txt"
-        _write_to_file.distribute_and_wait(tmp_file_path, "test")
+        tmp_file_path = tmpdir / "check_1.txt"
+        _write_to_file.distribute_and_wait(str(tmp_file_path), "test")
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
             raise Exception(msg)
@@ -56,8 +58,8 @@ def check_slurm(partition, constraint):
             )
 
         # Check 2
-        tmp_file_path = tmpdir + "/check_2.txt"
-        _write_to_file.distribute(tmp_file_path, "test")
+        tmp_file_path = tmpdir / "check_2.txt"
+        _write_to_file.distribute(str(tmp_file_path), "test")
         # wait up to 1 minutes for the file to be written
         for _ in range(60):
             if Path(tmp_file_path).exists():
