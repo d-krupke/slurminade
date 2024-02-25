@@ -1,6 +1,7 @@
+from pytest import raises
 
 import slurminade
-from pytest import raises
+
 
 def test_dispatch_limit_batch():
     @slurminade.slurmify()

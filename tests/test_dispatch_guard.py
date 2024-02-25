@@ -29,7 +29,7 @@ class TestDispatchGuard(unittest.TestCase):
     def test_dispatch_limit_batch(self):
         slurminade.set_entry_point(__file__)
         set_dispatch_limit(2)
-        with slurminade.Batch(max_size=2):
+        with slurminade.JobBundling(max_size=2):
             for _ in range(4):
                 f.distribute()
         self.assertRaises(TooManyDispatchesError, f.distribute)

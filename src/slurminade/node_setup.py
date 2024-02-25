@@ -1,6 +1,8 @@
 import inspect
 import typing
+
 from .guard import on_slurm_node
+
 
 def node_setup(func: typing.Callable):
     """

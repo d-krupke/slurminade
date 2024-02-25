@@ -40,8 +40,7 @@ class TaskBuffer:
     def clear(self):
         self._tasks.clear()
 
-
-class Batch(Dispatcher):
+class JobBundling(Dispatcher):
     """
     The logic to buffer the function calls. It wraps the original dispatcher.
 
@@ -64,6 +63,7 @@ class Batch(Dispatcher):
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
         self._batch_guard = BatchGuard()
+        self._all_job_ids = []
 
     def flush(self, options: typing.Optional[SlurmOptions] = None) -> typing.List[int]:
         """
@@ -90,7 +90,14 @@ class Batch(Dispatcher):
                 job_ids.append(job_id)
                 tasks = tasks[: self.max_size]
         self._tasks.clear()
+        self._all_job_ids.extend(job_ids)
         return job_ids
+    
+    def get_all_job_ids(self):
+        """
+        Return all job ids that have been used.
+        """
+        return list(self._all_job_ids)
 
     def add(self, func: SlurmFunction, *args, **kwargs):
         """
@@ -105,8 +112,14 @@ class Batch(Dispatcher):
         )
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
+        if block:
+            # if blocking, we don't buffer, but dispatch immediately
+            return self.subdispatcher._dispatch(funcs, options, block=True)
         for func in funcs:
             self._tasks.add(func, options)
         return -1
@@ -117,6 +130,7 @@ class Batch(Dispatcher):
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ):
+        conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.srun(command, conf, simple_slurm_kwargs)
 
     def sbatch(
@@ -125,6 +139,7 @@ class Batch(Dispatcher):
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
     ):
+        conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.sbatch(command, conf, simple_slurm_kwargs)
 
     def __enter__(self):
@@ -152,5 +167,21 @@ class Batch(Dispatcher):
     def __del__(self):
         self.flush()
 
+    def join(self):
+        self.flush()
+        return self.subdispatcher.join()
+
     def is_sequential(self):
         return self.subdispatcher.is_sequential()
+
+
+
+class Batch(JobBundling):
+    """
+    Compatibility alias for JobBundling. This is the old name. Deprecated.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        logging.getLogger("slurminade").warning(
+            "The `Batch` class has been renamed to `JobBundling`. Please update your code."
+        )

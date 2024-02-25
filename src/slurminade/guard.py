@@ -15,9 +15,11 @@ import typing
 
 _exec_flag = False
 
+
 def on_slurm_node():
     global _exec_flag
     return _exec_flag
+
 
 def guard_recursive_distribution():
     if on_slurm_node():

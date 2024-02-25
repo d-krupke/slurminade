@@ -7,13 +7,13 @@ where = ["src"]
 
 [project]
 name = "slurminade"
-version = "1.0.0"
+version = "0.10.0"
 authors = [
     { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
 ]
 description = "A decorator-based slurm runner."
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

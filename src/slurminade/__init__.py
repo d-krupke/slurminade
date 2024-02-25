@@ -62,10 +62,11 @@ from .guard import (
     allow_recursive_distribution,
     disable_warning_on_repeated_flushes,
 )
-from .batch import Batch
+from .bundling import JobBundling, Batch
 from .dispatcher import (
     srun,
     sbatch,
+    join,
     SlurmDispatcher,
     set_dispatcher,
     get_dispatcher,
@@ -82,8 +83,10 @@ __all__ = [
     "set_dispatch_limit",
     "allow_recursive_distribution",
     "disable_warning_on_repeated_flushes",
+    "JobBundling",
     "Batch",
     "srun",
+    "join",
     "sbatch",
     "SlurmDispatcher",
     "set_dispatcher",
