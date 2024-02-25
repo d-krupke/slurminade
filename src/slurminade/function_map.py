@@ -44,7 +44,7 @@ class FunctionMap:
                 msg = "No entry point known."
                 raise RuntimeError(msg)
             file = FunctionMap.entry_point
-        path = os.path.normpath(os.path.abspath(file))
+        path = Path(file).resolve()
         return f"{path}:{func.__name__}"
 
     @staticmethod

@@ -31,8 +31,8 @@ def check_slurm(partition, constraint):
     from slurminade.function_map import set_entry_point
 
     set_dispatcher(SlurmDispatcher())
-    print("Setting entry point to ", __file__)
-    set_entry_point(__file__)
+    print("Setting entry point to ", Path(__file__).resolve())
+    set_entry_point(Path(__file__).resolve())
 
     if partition:
         update_default_configuration(partition=partition)
