@@ -40,7 +40,7 @@ def check_slurm(partition, constraint):
         update_default_configuration(constraint=constraint)
 
     # create a temporary folder for the slurm check
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir=".") as tmpdir:
         # Check 1
         tmp_file_path = tmpdir + "/check_1.txt"
         _write_to_file.distribute_and_wait(tmp_file_path, "test")
