@@ -1,7 +1,7 @@
 import inspect
+import subprocess
 import typing
 from enum import Enum
-import subprocess
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap
@@ -190,7 +190,6 @@ def slurmify(
         return SlurmFunction(args, func, func_id)
 
     return dec
-
 
 @slurmify()
 def exec(cmd: typing.Union[str, typing.List[str]]):

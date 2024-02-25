@@ -23,7 +23,7 @@ def clean_up():
 if __name__ == "__main__":
     jid = prepare.distribute()
 
-    with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
+    with slurminade.JobBundling(max_size=20) as batch:  # automatically bundles up to 20 tasks
         # run 10x f after prepare has finished
         for i in range(100):
             f.wait_for(jid).distribute(i)

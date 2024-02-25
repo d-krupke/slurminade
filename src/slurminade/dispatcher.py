@@ -231,7 +231,9 @@ class SlurmDispatcher(Dispatcher):
         logging.getLogger("slurminade").debug(command)
         if block:
             ret = slurm.srun(command)
-            logging.getLogger("slurminade").info("Returned from srun with exit code %s", ret)
+            logging.getLogger("slurminade").info(
+                "Returned from srun with exit code %s", ret
+            )
             return None
         jid = slurm.sbatch(command)
         self._all_job_ids.append(jid)
@@ -433,7 +435,11 @@ def srun(
         if conf is None:
             conf = {}
         conf = SlurmOptions(**conf)
-    command = command if isinstance(command, str) else " ".join((shlex.quote(c) for c in command))
+    command = (
+        command
+        if isinstance(command, str)
+        else " ".join(shlex.quote(c) for c in command)
+    )
     return get_dispatcher().srun(command, conf, simple_slurm_kwargs)
 
 
@@ -453,7 +459,11 @@ def sbatch(
         if conf is None:
             conf = {}
         conf = SlurmOptions(**conf)
-    command = command if isinstance(command, str) else " ".join((shlex.quote(c) for c in command))
+    command = (
+        command
+        if isinstance(command, str)
+        else " ".join(shlex.quote(c) for c in command)
+    )
     return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)
 
 
@@ -463,6 +473,3 @@ def join():
     :return: None
     """
     get_dispatcher().join()
-
-
-

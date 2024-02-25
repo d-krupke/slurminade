@@ -53,7 +53,10 @@ A simple script could look like this:
 
    import slurminade
 
-   slurminade.update_default_configuration(partition="alg")  # global options for slurm
+   slurminade.update_default_configuration(
+      partition="alg",
+      exclusive=True
+      )  # global options for slurm
 
    # If no slurm environment is found, the functions are called directly to make scripts
    # compatible with any environment.
@@ -84,26 +87,25 @@ A simple script could look like this:
 
 
    if __name__ == "__main__":
-       jid = prepare.distribute()
+      prepare.distribute()
+      slurminade.join()  # make sure that no job runs before prepare has finished
+      with slurminade.JobBundling(max_size=20):  # automatically bundles up to 20 tasks
+         # run 100x f after `prepare` has finished
+         for i in range(100):
+            f.distribute(i)
 
-       with slurminade.Batch(max_size=20) as batch:  # automatically bundles up to 20 tasks
-           # run 100x f after `prepare` has finished
-           for i in range(100):
-               f.wait_for(jid).distribute(i)  # no job id while in batch!
-
-           # clean up after the previous jobs have finished
-           jids = batch.flush()  # flush returns a list with all job ids.
-           clean_up.wait_for(jids).distribute()
+      slurminade.join()  # make sure that the clean up jobs runs after all f-jobs have finished
+      clean_up.distribute()
 
 If slurm is not available, ``distribute`` results in a local function
 call. Analogous for ``srun`` and ``sbatch`` (giving some extra value on
 top of just forwarding to *simple_slurm*).
 
 .. warning::
-   Always use ``Batch`` when distributing many small tasks to few nodes. Slurm
+   Always use ``JobBundling`` when distributing many small tasks to few nodes. Slurm
    jobs have a certain overhead and you do not want to spam your
    infrastructure with too many jobs. However, function calls
-   joined by ``Batch`` are considered as a single job by slurm, thus,
+   joined by ``JobBundling`` are considered as a single job by slurm, thus,
    not shared across nodes.
 
 **What are the limitations of slurminade?** Slurminade reconstructs the
@@ -343,7 +345,7 @@ Project structure
 
 The project is reasonably easy:
 
--  batch.py: Contains code for bundling tasks, so we don’t spam slurm
+-  bundling.py: Contains code for bundling tasks, so we don’t spam slurm
    with too many.
 -  conf.py: Contains code for managing the configuration of slurm.
 -  dispatcher.py: Contains code for actually dispatching tasks to slurm.
@@ -358,6 +360,7 @@ The project is reasonably easy:
 Changes
 -------
 
+-  0.10.0: `Batch` is now named `JobBundling`. There is a method `join` for easier synchronization. `exec` allows to executed commands just like `srun` and `sbatch`, but uniform syntax with other slurmified functions. Functions can now also be called with `distribute_and_wait`. If you call `python3 -m slurminade.check --partition YOUR_PARTITION --constraint YOUR_CONSTRAINT` you can check if your slurm configuration is running correctly.
 -  0.9.0: Lots of improvements.
 -  0.8.1: Bugfix and automatic detection of wrong usage when using ``Batch`` with ``wait_for``.
 -  0.8.0: Added extensive logging and improved typing.
