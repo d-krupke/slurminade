@@ -54,9 +54,8 @@ A simple script could look like this:
    import slurminade
 
    slurminade.update_default_configuration(
-      partition="alg",
-      exclusive=True
-      )  # global options for slurm
+       partition="alg", exclusive=True
+   )  # global options for slurm
 
    # If no slurm environment is found, the functions are called directly to make scripts
    # compatible with any environment.
@@ -87,15 +86,15 @@ A simple script could look like this:
 
 
    if __name__ == "__main__":
-      prepare.distribute()
-      slurminade.join()  # make sure that no job runs before prepare has finished
-      with slurminade.JobBundling(max_size=20):  # automatically bundles up to 20 tasks
-         # run 100x f after `prepare` has finished
-         for i in range(100):
-            f.distribute(i)
+       prepare.distribute()
+       slurminade.join()  # make sure that no job runs before prepare has finished
+       with slurminade.JobBundling(max_size=20):  # automatically bundles up to 20 tasks
+           # run 100x f after `prepare` has finished
+           for i in range(100):
+               f.distribute(i)
 
-      slurminade.join()  # make sure that the clean up jobs runs after all f-jobs have finished
-      clean_up.distribute()
+       slurminade.join()  # make sure that the clean up jobs runs after all f-jobs have finished
+       clean_up.distribute()
 
 If slurm is not available, ``distribute`` results in a local function
 call. Analogous for ``srun`` and ``sbatch`` (giving some extra value on

@@ -191,6 +191,7 @@ def slurmify(
 
     return dec
 
+
 @slurmify()
 def exec(cmd: typing.Union[str, typing.List[str]]):
     """
