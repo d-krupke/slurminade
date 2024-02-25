@@ -10,6 +10,7 @@ from slurminade import slurmify
 
 @slurmify()
 def _write_to_file(path, content):
+    time.sleep(1)
     # get hostname and write it to the file
     hostname = socket.gethostname()
     with open(path, "w") as file:
