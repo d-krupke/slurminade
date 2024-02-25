@@ -92,6 +92,7 @@ class Dispatcher(abc.ABC):
         self,
         funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
         options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         """
         Dispatches a function call or a number of function calls.
@@ -103,7 +104,7 @@ class Dispatcher(abc.ABC):
             funcs = [funcs]
         funcs = list(funcs)
         self._log_dispatch(funcs, options)
-        return self._dispatch(funcs, options)
+        return self._dispatch(funcs, options, block)
 
     def is_sequential(self):
         """
