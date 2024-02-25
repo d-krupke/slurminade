@@ -32,6 +32,7 @@ def check_slurm(partition, constraint):
     from .dispatcher import SlurmDispatcher
 
     set_dispatcher(SlurmDispatcher())
+    print("Setting entry point to ", __file__)
     set_entry_point(__file__)
 
     if partition:
