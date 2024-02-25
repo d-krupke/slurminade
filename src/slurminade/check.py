@@ -80,7 +80,7 @@ def check_slurm(partition, constraint):
 
         # Check 3
         tmp_file_path = tmpdir / "check_3.txt"
-        srun(f"touch {tmp_file_path}")
+        srun(["touch", str(tmp_file_path)])
         time.sleep(1)
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."

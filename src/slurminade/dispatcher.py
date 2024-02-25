@@ -214,7 +214,7 @@ class SlurmDispatcher(Dispatcher):
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
         block: bool = False,
-    ) -> int:
+    ) -> typing.Optional[int]:
         dispatch_guard()
         if "job_name" not in options:
             funcs = list(funcs)
@@ -229,7 +229,11 @@ class SlurmDispatcher(Dispatcher):
             get_entry_point(), funcs, self.max_arg_length
         )
         logging.getLogger("slurminade").debug(command)
-        jid = slurm.srun(command) if block else slurm.sbatch(command)
+        if block:
+            ret = slurm.srun(command)
+            logging.getLogger("slurminade").info("Returned from srun with exit code %s", ret)
+            return None
+        jid = slurm.sbatch(command)
         self._all_job_ids.append(jid)
         return jid
 
@@ -266,11 +270,10 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         logging.getLogger("slurminade").debug("SRUN %s", command)
         if simple_slurm_kwargs:
-            jid = slurm.srun(command, **simple_slurm_kwargs)
+            ret = slurm.srun(command, **simple_slurm_kwargs)
         else:
-            jid = slurm.srun(command)
-        self._all_job_ids.append(jid)
-        return jid
+            ret = slurm.srun(command)
+        return ret
 
 
 class SubprocessDispatcher(Dispatcher):
@@ -414,7 +417,7 @@ def dispatch(
 
 
 def srun(
-    command: str,
+    command: typing.Union[str, typing.List[str]],
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
     simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
 ) -> int:
@@ -430,11 +433,12 @@ def srun(
         if conf is None:
             conf = {}
         conf = SlurmOptions(**conf)
+    command = command if isinstance(command, str) else " ".join((shlex.quote(c) for c in command))
     return get_dispatcher().srun(command, conf, simple_slurm_kwargs)
 
 
 def sbatch(
-    command: str,
+    command: typing.Union[str, typing.List[str]],
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
     simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
 ) -> int:
@@ -449,6 +453,7 @@ def sbatch(
         if conf is None:
             conf = {}
         conf = SlurmOptions(**conf)
+    command = command if isinstance(command, str) else " ".join((shlex.quote(c) for c in command))
     return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)
 
 
@@ -458,3 +463,15 @@ def join():
     :return: None
     """
     get_dispatcher().join()
+
+
+from .function import slurmify
+
+
+@slurmify()
+def exec(cmd: typing.Union[str, typing.List[str]]):
+    """
+    Execute a command.
+    :param cmd: The command to be executed.
+    """
+    subprocess.run(cmd, check=True)
