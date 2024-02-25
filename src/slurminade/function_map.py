@@ -5,7 +5,6 @@ Not relevant for endusers.
 
 import inspect
 import logging
-import os
 import pathlib
 import typing
 from pathlib import Path

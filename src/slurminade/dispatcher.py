@@ -267,7 +267,10 @@ class SubprocessDispatcher(Dispatcher):
         self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         dispatch_guard()
         command = create_slurminade_command(
@@ -306,7 +309,10 @@ class DirectCallDispatcher(Dispatcher):
     """
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
         dispatch_guard()
         for func in funcs:
@@ -384,7 +390,7 @@ def dispatch(
         if not FunctionMap.check_id(func.func_id):
             msg = f"Function '{func.func_id}' cannot be called from the given entry point."
             raise KeyError(msg)
-    return get_dispatcher()(funcs, options)
+    return get_dispatcher()(funcs, options, block)
 
 
 def srun(

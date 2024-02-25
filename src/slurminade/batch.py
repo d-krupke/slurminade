@@ -105,8 +105,14 @@ class Batch(Dispatcher):
         )
 
     def _dispatch(
-        self, funcs: typing.Iterable[FunctionCall], options: SlurmOptions
+        self,
+        funcs: typing.Iterable[FunctionCall],
+        options: SlurmOptions,
+        block: bool = False,
     ) -> int:
+        if block:
+            # if blocking, we don't buffer, but dispatch immediately
+            return self.subdispatcher._dispatch(funcs, options, block=True)
         for func in funcs:
             self._tasks.add(func, options)
         return -1
