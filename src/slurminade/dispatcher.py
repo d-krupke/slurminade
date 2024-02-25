@@ -117,6 +117,13 @@ class Dispatcher(abc.ABC):
         """
         return False
 
+    def join(self):
+        if self.is_sequential():
+            # Already sequential, nothing to do
+            return
+        msg = "Joining is not implemented for this dispatcher."
+        raise NotImplementedError(msg)
+
 
 class TestDispatcher(Dispatcher):
     """
@@ -162,7 +169,7 @@ class TestDispatcher(Dispatcher):
     ):
         dispatch_guard()
         self.sruns.append(command)
-        print("SRUN", command)
+        logging.getLogger("slurminade").info("[test output] SRUN %s", command)
 
     def sbatch(
         self,
@@ -172,7 +179,7 @@ class TestDispatcher(Dispatcher):
     ):
         dispatch_guard()
         self.sbatches.append(command)
-        print("SBATCH", command)
+        logging.getLogger("slurminade").info("[test output] SBATCH %s", command)
 
     def is_sequential(self):
         return True
@@ -189,18 +196,18 @@ class SlurmDispatcher(Dispatcher):
             msg = "Slurm could not be found."
             raise RuntimeError(msg)
         self.max_arg_length = DEFAULT_MAX_ARG_LENGTH
+        self._all_job_ids = []
+        self._join_dependencies = []
 
     def _create_slurm_api(self, special_slurm_opts):
         conf = _get_conf(special_slurm_opts)
-        slurm = simple_slurm.Slurm(**conf)
-        return slurm
+        return simple_slurm.Slurm(**conf)
 
     def _job_name(self, funcs: typing.List[FunctionCall]) -> str:
         func_names = list({FunctionMap.get_readable_name(f.func_id) for f in funcs})
         if len(funcs) == 1:
             return f"slurminade:{func_names[0]}"
-        else:
-            return f"slurminade[batch]:{func_names[0]}..."
+        return f"slurminade[batch]:{func_names[0]}..."
 
     def _dispatch(
         self,
@@ -214,14 +221,17 @@ class SlurmDispatcher(Dispatcher):
             # This is complicated to prevent warnings about the type
             options = SlurmOptions(**options.as_dict())
             options["job_name"] = self._job_name(funcs)
+        options = SlurmOptions(**options)
+        if self._join_dependencies:
+            options.add_dependencies(self._join_dependencies, "afterany")
         slurm = self._create_slurm_api(options)
         command = create_slurminade_command(
             get_entry_point(), funcs, self.max_arg_length
         )
         logging.getLogger("slurminade").debug(command)
-        if block:
-            return slurm.srun(command)
-        return slurm.sbatch(command)
+        jid = slurm.srun(command) if block else slurm.sbatch(command)
+        self._all_job_ids.append(jid)
+        return jid
 
     def sbatch(
         self,
@@ -234,9 +244,16 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         logging.getLogger("slurminade").debug("SBATCH %s", command)
         if simple_slurm_kwargs:
-            return slurm.sbatch(command, **simple_slurm_kwargs)
+            jid = slurm.sbatch(command, **simple_slurm_kwargs)
         else:
-            return slurm.sbatch(command)
+            jid = slurm.sbatch(command)
+        self._all_job_ids.append(jid)
+        return jid
+
+    def join(self):
+        if not self._all_job_ids:
+            return
+        self._join_dependencies = list(set(self._all_job_ids))
 
     def srun(
         self,
@@ -249,9 +266,11 @@ class SlurmDispatcher(Dispatcher):
         slurm = simple_slurm.Slurm(**conf)
         logging.getLogger("slurminade").debug("SRUN %s", command)
         if simple_slurm_kwargs:
-            return slurm.srun(command, **simple_slurm_kwargs)
+            jid = slurm.srun(command, **simple_slurm_kwargs)
         else:
-            return slurm.srun(command)
+            jid = slurm.srun(command)
+        self._all_job_ids.append(jid)
+        return jid
 
 
 class SubprocessDispatcher(Dispatcher):
@@ -431,3 +450,11 @@ def sbatch(
             conf = {}
         conf = SlurmOptions(**conf)
     return get_dispatcher().sbatch(command, conf, simple_slurm_kwargs)
+
+
+def join():
+    """
+    Join all jobs that have been dispatched so far.
+    :return: None
+    """
+    get_dispatcher().join()

@@ -66,6 +66,7 @@ from .batch import Batch
 from .dispatcher import (
     srun,
     sbatch,
+    join,
     SlurmDispatcher,
     set_dispatcher,
     get_dispatcher,
@@ -84,6 +85,7 @@ __all__ = [
     "disable_warning_on_repeated_flushes",
     "Batch",
     "srun",
+    "join",
     "sbatch",
     "SlurmDispatcher",
     "set_dispatcher",

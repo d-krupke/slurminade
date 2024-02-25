@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from slurminade import slurmify
+from slurminade import join, slurmify, srun
 
 
 @slurmify()
@@ -14,6 +14,7 @@ def _write_to_file(path, content):
     # get hostname and write it to the file
     hostname = socket.gethostname()
     with open(path, "w") as file:
+        print("Hello from ", hostname)
         file.write(content + "\n" + hostname)
     # wait a second for the file to be written
     time.sleep(1)
@@ -53,7 +54,7 @@ def check_slurm(partition, constraint):
         with open(tmp_file_path) as file:
             content = file.readlines()
             print(
-                "Slurminade check 1 successful. Test was run on node ",
+                "Slurminade check 1 successful. Test was run on node",
                 content[1].strip(),
             )
 
@@ -71,7 +72,32 @@ def check_slurm(partition, constraint):
         with open(tmp_file_path) as file:
             content = file.readlines()
             print(
-                "Slurminade check 2 successful. Test was run on node ",
+                "Slurminade check 2 successful. Test was run on node",
+                content[1].strip(),
+            )
+
+        join()
+
+        # Check 3
+        tmp_file_path = tmpdir / "check_3.txt"
+        srun(f"touch {tmp_file_path}")
+        time.sleep(1)
+        if not Path(tmp_file_path).exists():
+            msg = "Slurminade failed: The file was not written to the temporary directory."
+            raise Exception(msg)
+        print("Slurminade check 3 successful.")
+        tmp_file_path.unlink()
+
+        # Check 4
+        tmp_file_path = tmpdir / "check_4.txt"
+        _write_to_file.distribute_and_wait(str(tmp_file_path), "test")
+        if not Path(tmp_file_path).exists():
+            msg = "Slurminade failed: The file was not written to the temporary directory."
+            raise Exception(msg)
+        with open(tmp_file_path) as file:
+            content = file.readlines()
+            print(
+                "Slurminade check 1 successful. Test was run on node",
                 content[1].strip(),
             )
 

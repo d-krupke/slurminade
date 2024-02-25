@@ -160,5 +160,9 @@ class Batch(Dispatcher):
     def __del__(self):
         self.flush()
 
+    def join(self):
+        self.flush()
+        return self.subdispatcher.join()
+
     def is_sequential(self):
         return self.subdispatcher.is_sequential()
