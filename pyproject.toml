@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "slurminade"
-version = "0.10.1"
+version = "1.0.1"
 authors = [
     { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
 ]

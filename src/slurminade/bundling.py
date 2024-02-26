@@ -14,7 +14,21 @@ from .dispatcher import (
 from .function import SlurmFunction
 from .guard import BatchGuard
 from .options import SlurmOptions
+from .job_reference import JobReference
 
+class BundlingJobReference(JobReference):
+    def __init__(self) -> None:
+        super().__init__()
+        pass
+
+    def get_job_id(self) -> typing.Optional[int]:
+        return None
+    
+    def get_exit_code(self) -> typing.Optional[int]:
+        return None
+    
+    def get_info(self) -> typing.Dict[str, typing.Any]:
+        return {}
 
 class TaskBuffer:
     """
@@ -116,20 +130,20 @@ class JobBundling(Dispatcher):
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
         block: bool = False,
-    ) -> int:
+    ) -> JobReference:
         if block:
             # if blocking, we don't buffer, but dispatch immediately
             return self.subdispatcher._dispatch(funcs, options, block=True)
         for func in funcs:
             self._tasks.add(func, options)
-        return -1
+        return BundlingJobReference()
 
     def srun(
         self,
         command: str,
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
-    ):
+    ) -> JobReference:
         conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.srun(command, conf, simple_slurm_kwargs)
 
@@ -138,7 +152,7 @@ class JobBundling(Dispatcher):
         command: str,
         conf: typing.Optional[typing.Dict] = None,
         simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
-    ):
+    ) -> JobReference:
         conf = SlurmOptions(conf if conf else {})
         return self.subdispatcher.sbatch(command, conf, simple_slurm_kwargs)
 
