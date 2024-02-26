@@ -12,7 +12,7 @@ import click
 from .function import SlurmFunction
 from .function_map import FunctionMap, set_entry_point
 from .guard import prevent_distribution
-
+from .node_setup import disable_setup
 
 @click.command()
 @click.option(
@@ -37,7 +37,8 @@ from .guard import prevent_distribution
 )
 def main(root, calls, fromfile, listfuncs):
     prevent_distribution()  # make sure, the code on the node does not distribute itself.
-
+    if listfuncs:
+        disable_setup()
     set_entry_point(root)
     with open(root) as f:
         code = "".join(f.readlines())
