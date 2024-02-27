@@ -216,7 +216,7 @@ def slurmify(
 
 
 @slurmify()
-def exec(cmd: typing.Union[str, typing.List[str]]):
+def shell(cmd: typing.Union[str, typing.List[str]]):
     """
     Execute a command.
     :param cmd: The command to be executed.
