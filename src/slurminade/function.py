@@ -214,8 +214,31 @@ def slurmify(
 
     return dec
 
+def _slurmify(
+    allow_overwrite: bool, **args
+) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+    """
+    Decorator: Make a function distributable to slurm.
+    Usage:
 
-@slurmify()
+    .. code-block:: python
+
+        @slurmify_()
+        def func(a, b):
+            pass
+
+    :param f: Function
+    :param args: Special slurm options for this function.
+    :return: A decorated function, callable with slurm.
+    """
+
+    def dec(func) -> SlurmFunction:
+        func_id = FunctionMap.register(func, allow_overwrite=allow_overwrite)
+        return SlurmFunction(args, func, func_id)
+
+    return dec
+
+@_slurmify(allow_overwrite=True)
 def shell(cmd: typing.Union[str, typing.List[str]]):
     """
     Execute a command.

@@ -66,7 +66,7 @@ class FunctionMap:
             raise ValueError(msg)
 
     @staticmethod
-    def register(func: typing.Callable) -> str:
+    def register(func: typing.Callable, allow_overwrite: bool=False) -> str:
         """
         Register a function, allowing it to be called just by its id.
         :param func: The function to be stored. Needs to be a proper function.
@@ -74,11 +74,15 @@ class FunctionMap:
         """
         FunctionMap.check_compatibility(func)
         func_id = FunctionMap.get_id(func)
-        if func_id in FunctionMap._data:
+        if func_id in FunctionMap._data and not allow_overwrite:
             msg = "Multiple function definitions!"
             raise RuntimeError(msg)
         FunctionMap._data[func_id] = func
         return func_id
+    
+    @staticmethod
+    def exists(func_id: str) -> bool:
+        return func_id in FunctionMap._data
 
     @staticmethod
     def call(
