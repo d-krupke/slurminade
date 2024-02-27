@@ -158,7 +158,7 @@ class TestDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
-        entry_point: Path,  
+        entry_point: Path,
         block: bool = False,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()
@@ -267,9 +267,7 @@ class SlurmDispatcher(Dispatcher):
         if self._join_dependencies:
             options.add_dependencies(self._join_dependencies, "afterany")
         slurm = self._create_slurm_api(options)
-        command = create_slurminade_command(
-            entry_point, funcs, self.max_arg_length
-        )
+        command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
         logging.getLogger("slurminade").debug(command)
         if block:
             ret = slurm.srun(command)
@@ -351,13 +349,11 @@ class SubprocessDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
-        entry_point: Path,  # noqa: ARG002
+        entry_point: Path,
         block: bool = False,  # noqa: ARG002
     ) -> int:
         dispatch_guard()
-        command = create_slurminade_command(
-            entry_point, funcs, self.max_arg_length
-        )
+        command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
         os.system(command)
         return -1
 

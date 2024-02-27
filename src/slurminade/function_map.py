@@ -66,7 +66,7 @@ class FunctionMap:
             raise ValueError(msg)
 
     @staticmethod
-    def register(func: typing.Callable, allow_overwrite: bool=False) -> str:
+    def register(func: typing.Callable, allow_overwrite: bool = False) -> str:
         """
         Register a function, allowing it to be called just by its id.
         :param func: The function to be stored. Needs to be a proper function.
@@ -79,7 +79,7 @@ class FunctionMap:
             raise RuntimeError(msg)
         FunctionMap._data[func_id] = func
         return func_id
-    
+
     @staticmethod
     def exists(func_id: str) -> bool:
         return func_id in FunctionMap._data
@@ -137,13 +137,16 @@ def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:
 def get_entry_point() -> Path:
     if FunctionMap.entry_point is None:
         import __main__
+
         # check if attribute __file__ is available
         if not hasattr(__main__, "__file__"):
-            raise FileNotFoundError("No entry point known.")
+            msg = "No entry point known."
+            raise FileNotFoundError(msg)
 
         entry_point = __main__.__file__
         if not Path(entry_point).is_file() or Path(entry_point).suffix != ".py":
-            raise FileNotFoundError("No entry point known.")
+            msg = "No entry point known."
+            raise FileNotFoundError(msg)
 
         set_entry_point(entry_point)
     assert FunctionMap.entry_point is not None

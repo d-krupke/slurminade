@@ -1,9 +1,10 @@
 import inspect
+import logging
 import subprocess
 import typing
 from enum import Enum
 from pathlib import Path
-import logging
+
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap, get_entry_point
 from .guard import guard_recursive_distribution
@@ -124,8 +125,8 @@ class SlurmFunction:
         else:
             msg = "Unknown call policy."
             raise RuntimeError(msg)
-        
-    def get_entry_point(self)->Path:
+
+    def get_entry_point(self) -> Path:
         """
         Returns the entry point for the function.
         Either it is defined in the FunctionMap, or the defining file is used.
@@ -133,7 +134,9 @@ class SlurmFunction:
         try:
             return get_entry_point()
         except FileNotFoundError:
-            logging.getLogger("slurminade").debug("Using defining file %s as entry point.", self.defining_file)
+            logging.getLogger("slurminade").debug(
+                "Using defining file %s as entry point.", self.defining_file
+            )
             return self.defining_file
 
     def distribute(self, *args, **kwargs) -> JobReference:
@@ -214,6 +217,7 @@ def slurmify(
 
     return dec
 
+
 def _slurmify(
     allow_overwrite: bool, **args
 ) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
@@ -237,6 +241,7 @@ def _slurmify(
         return SlurmFunction(args, func, func_id)
 
     return dec
+
 
 @_slurmify(allow_overwrite=True)
 def shell(cmd: typing.Union[str, typing.List[str]]):

@@ -13,7 +13,6 @@ from .dispatcher import (
     set_dispatcher,
 )
 from .function import SlurmFunction
-from .guard import BatchGuard
 from .job_reference import JobReference
 from .options import SlurmOptions
 
@@ -112,7 +111,9 @@ class JobBundling(Dispatcher):
         :return: None
         """
         self._dispatch(
-            [FunctionCall(func.func_id, args, kwargs)], func.special_slurm_opts, func.get_entry_point()
+            [FunctionCall(func.func_id, args, kwargs)],
+            func.special_slurm_opts,
+            func.get_entry_point(),
         )
 
     def _dispatch(
