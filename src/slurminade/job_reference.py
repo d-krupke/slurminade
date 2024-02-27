@@ -1,6 +1,7 @@
 import abc
 from typing import Any, Dict, Optional
 
+
 class JobReference(abc.ABC):
     @abc.abstractmethod
     def get_job_id(self) -> Optional[int]:

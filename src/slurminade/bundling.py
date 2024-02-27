@@ -13,8 +13,9 @@ from .dispatcher import (
 )
 from .function import SlurmFunction
 from .guard import BatchGuard
-from .options import SlurmOptions
 from .job_reference import JobReference
+from .options import SlurmOptions
+
 
 class BundlingJobReference(JobReference):
     def __init__(self) -> None:
@@ -23,12 +24,13 @@ class BundlingJobReference(JobReference):
 
     def get_job_id(self) -> typing.Optional[int]:
         return None
-    
+
     def get_exit_code(self) -> typing.Optional[int]:
         return None
-    
+
     def get_info(self) -> typing.Dict[str, typing.Any]:
         return {}
+
 
 class TaskBuffer:
     """
@@ -53,6 +55,7 @@ class TaskBuffer:
 
     def clear(self):
         self._tasks.clear()
+
 
 class JobBundling(Dispatcher):
     """
@@ -106,7 +109,7 @@ class JobBundling(Dispatcher):
         self._tasks.clear()
         self._all_job_ids.extend(job_ids)
         return job_ids
-    
+
     def get_all_job_ids(self):
         """
         Return all job ids that have been used.
@@ -189,11 +192,11 @@ class JobBundling(Dispatcher):
         return self.subdispatcher.is_sequential()
 
 
-
 class Batch(JobBundling):
     """
     Compatibility alias for JobBundling. This is the old name. Deprecated.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         logging.getLogger("slurminade").warning(

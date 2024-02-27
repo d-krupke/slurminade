@@ -6,8 +6,9 @@ from enum import Enum
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap
 from .guard import guard_recursive_distribution
-from .options import SlurmOptions
 from .job_reference import JobReference
+from .options import SlurmOptions
+
 
 class CallPolicy(Enum):
     """
@@ -52,7 +53,9 @@ class SlurmFunction:
         self.special_slurm_opts.update(conf)
 
     def wait_for(
-        self, job_ids: typing.Union[JobReference, typing.Iterable[JobReference]], method: str = "afterany"
+        self,
+        job_ids: typing.Union[JobReference, typing.Iterable[JobReference]],
+        method: str = "afterany",
     ) -> "SlurmFunction":
         """
         Add a dependency to a distribution.
@@ -76,10 +79,15 @@ class SlurmFunction:
             msg += " This is probably an error in your code."
             msg += " Maybe you are using `Batch` but flush outside of the `with` block?"
             raise RuntimeError(msg)
-        if any(jid.get_job_id() is None for jid in job_ids) and not get_dispatcher().is_sequential():
+        if (
+            any(jid.get_job_id() is None for jid in job_ids)
+            and not get_dispatcher().is_sequential()
+        ):
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(msg)
-        sfunc.special_slurm_opts.add_dependencies(list(jid.get_job_id() for jid in job_ids), method)
+        sfunc.special_slurm_opts.add_dependencies(
+            [jid.get_job_id() for jid in job_ids], method
+        )
         return sfunc
 
     def with_options(self, **kwargs) -> "SlurmFunction":

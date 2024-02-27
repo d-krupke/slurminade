@@ -69,7 +69,7 @@ extend-ignore = [
     "PT004",   # Incorrect, just usefixtures instead.
     "RUF009",  # Too easy to get a false positive
 ]
-target-version = "py37"
+target-version = "py38"
 src = ["src"]
 unfixable = ["T20", "F841"]
 exclude = []
@@ -78,7 +78,7 @@ exclude = []
 [tool.mypy]
 files = ["src", "tests"]
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/src"]
-python_version = "3.7"
+python_version = "3.8"
 warn_unused_configs = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
@@ -95,7 +95,7 @@ ignore_missing_imports = true
 
 
 [tool.pylint]
-py-version = "3.7"
+py-version = "3.8"
 jobs = "0"
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"

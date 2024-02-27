@@ -13,7 +13,7 @@ def _write_to_file(path, content):
     time.sleep(1)
     # get hostname and write it to the file
     hostname = socket.gethostname()
-    with open(path, "w") as file:
+    with Path(path).open("w") as file:
         print("Hello from ", hostname)
         file.write(content + "\n" + hostname)
     # wait a second for the file to be written
@@ -43,15 +43,15 @@ def check_slurm(partition, constraint):
 
     # create a temporary folder for the slurm check
     with tempfile.TemporaryDirectory(dir=".") as tmpdir:
-        tmpdir = Path(tmpdir).resolve()
-        assert Path(tmpdir).exists()
+        tmpdir_ = Path(tmpdir).resolve()
+        assert tmpdir_.exists()
         # Check 1
-        tmp_file_path = tmpdir / "check_1.txt"
+        tmp_file_path = tmpdir_ / "check_1.txt"
         _write_to_file.distribute_and_wait(str(tmp_file_path), "test")
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
             raise Exception(msg)
-        with open(tmp_file_path) as file:
+        with Path(tmp_file_path).open() as file:
             content = file.readlines()
             print(
                 "Slurminade check 1 successful. Test was run on node",
@@ -59,7 +59,7 @@ def check_slurm(partition, constraint):
             )
 
         # Check 2
-        tmp_file_path = tmpdir / "check_2.txt"
+        tmp_file_path = tmpdir_ / "check_2.txt"
         _write_to_file.distribute(str(tmp_file_path), "test")
         # wait up to 1 minutes for the file to be written
         for _ in range(60):
@@ -69,7 +69,7 @@ def check_slurm(partition, constraint):
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
             raise Exception(msg)
-        with open(tmp_file_path) as file:
+        with Path(tmp_file_path).open() as file:
             content = file.readlines()
             print(
                 "Slurminade check 2 successful. Test was run on node",
@@ -79,7 +79,7 @@ def check_slurm(partition, constraint):
         join()
 
         # Check 3
-        tmp_file_path = tmpdir / "check_3.txt"
+        tmp_file_path = tmpdir_ / "check_3.txt"
         srun(["touch", str(tmp_file_path)])
         time.sleep(1)
         if not Path(tmp_file_path).exists():
@@ -89,12 +89,12 @@ def check_slurm(partition, constraint):
         tmp_file_path.unlink()
 
         # Check 4
-        tmp_file_path = tmpdir / "check_4.txt"
+        tmp_file_path = tmpdir_ / "check_4.txt"
         _write_to_file.distribute_and_wait(str(tmp_file_path), "test")
         if not Path(tmp_file_path).exists():
             msg = "Slurminade failed: The file was not written to the temporary directory."
             raise Exception(msg)
-        with open(tmp_file_path) as file:
+        with Path(tmp_file_path).open() as file:
             content = file.readlines()
             print(
                 "Slurminade check 1 successful. Test was run on node",
