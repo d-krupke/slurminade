@@ -4,6 +4,7 @@ Contains code for bundling function calls together.
 import logging
 import typing
 from collections import defaultdict
+from pathlib import Path
 
 from .dispatcher import (
     Dispatcher,
@@ -40,17 +41,14 @@ class TaskBuffer:
     def __init__(self):
         self._tasks = defaultdict(list)
 
-    def add(self, task: FunctionCall, options: SlurmOptions) -> int:
-        self._tasks[options].append(task)
-        return len(self._tasks[options])
+    def add(self, task: FunctionCall, options: SlurmOptions, entry_point: Path) -> int:
+        self._tasks[(entry_point, options)].append(task)
+        return len(self._tasks[(entry_point, options)])
 
     def items(self):
-        for opt, tasks in self._tasks.items():
+        for (entry_point, opt), tasks in self._tasks.items():
             if tasks:
-                yield opt, tasks
-
-    def get(self, options: SlurmOptions) -> typing.List[FunctionCall]:
-        return self._tasks[options]
+                yield entry_point, opt, tasks
 
     def clear(self):
         self._tasks.clear()
@@ -78,10 +76,9 @@ class JobBundling(Dispatcher):
         self.max_size = max_size
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
-        self._batch_guard = BatchGuard()
         self._all_job_ids = []
 
-    def flush(self, options: typing.Optional[SlurmOptions] = None) -> typing.List[int]:
+    def flush(self) -> typing.List[int]:
         """
         Distribute all buffered tasks. Return the job ids used.
         This method is called automatically when the context is exited.
@@ -91,20 +88,11 @@ class JobBundling(Dispatcher):
         :return: A list of job ids.
         """
         job_ids = []
-        if options is None:
-            for opt, tasks in self._tasks.items():
-                while tasks:
-                    job_id = self.subdispatcher(tasks[: self.max_size], opt)
-                    job_ids.append(job_id)
-                    tasks = tasks[self.max_size :]
-
-        else:
-            tasks = self._tasks.get(options)
-            self._batch_guard.report_flush(len(tasks))
-            while len(tasks) > self.max_size:
-                job_id = self.subdispatcher(tasks[: self.max_size], options)
+        for entry_point, opt, tasks in self._tasks.items():
+            while tasks:
+                job_id = self.subdispatcher(tasks[: self.max_size], opt, entry_point)
                 job_ids.append(job_id)
-                tasks = tasks[: self.max_size]
+                tasks = tasks[self.max_size :]
         self._tasks.clear()
         self._all_job_ids.extend(job_ids)
         return job_ids
@@ -124,20 +112,21 @@ class JobBundling(Dispatcher):
         :return: None
         """
         self._dispatch(
-            [FunctionCall(func.func_id, args, kwargs)], func.special_slurm_opts
+            [FunctionCall(func.func_id, args, kwargs)], func.special_slurm_opts, func.get_entry_point()
         )
 
     def _dispatch(
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> JobReference:
         if block:
             # if blocking, we don't buffer, but dispatch immediately
-            return self.subdispatcher._dispatch(funcs, options, block=True)
+            return self.subdispatcher._dispatch(funcs, options, entry_point, block=True)
         for func in funcs:
-            self._tasks.add(func, options)
+            self._tasks.add(func, options, entry_point)
         return BundlingJobReference()
 
     def srun(

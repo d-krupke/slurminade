@@ -41,6 +41,7 @@ class Dispatcher(abc.ABC):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> JobReference:
         """
@@ -96,6 +97,7 @@ class Dispatcher(abc.ABC):
         self,
         funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> JobReference:
         """
@@ -108,7 +110,7 @@ class Dispatcher(abc.ABC):
             funcs = [funcs]
         funcs = list(funcs)
         self._log_dispatch(funcs, options)
-        return self._dispatch(funcs, options, block)
+        return self._dispatch(funcs, options, entry_point, block)
 
     def is_sequential(self):
         """
@@ -156,6 +158,7 @@ class TestDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,  
         block: bool = False,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()
@@ -251,6 +254,7 @@ class SlurmDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> SlurmJobReference:
         dispatch_guard()
@@ -264,7 +268,7 @@ class SlurmDispatcher(Dispatcher):
             options.add_dependencies(self._join_dependencies, "afterany")
         slurm = self._create_slurm_api(options)
         command = create_slurminade_command(
-            get_entry_point(), funcs, self.max_arg_length
+            entry_point, funcs, self.max_arg_length
         )
         logging.getLogger("slurminade").debug(command)
         if block:
@@ -347,11 +351,12 @@ class SubprocessDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,  # noqa: ARG002
         block: bool = False,  # noqa: ARG002
     ) -> int:
         dispatch_guard()
         command = create_slurminade_command(
-            get_entry_point(), funcs, self.max_arg_length
+            entry_point, funcs, self.max_arg_length
         )
         os.system(command)
         return -1
@@ -400,6 +405,7 @@ class DirectCallDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,  # noqa: ARG002
         block: bool = False,  # noqa: ARG002
     ) -> LocalJobReference:
         dispatch_guard()
@@ -466,6 +472,7 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
 def dispatch(
     funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
     options: SlurmOptions,
+    entry_point: Path,
     block: bool = False,
 ) -> JobReference:
     """
@@ -479,7 +486,7 @@ def dispatch(
         if not FunctionMap.check_id(func.func_id):
             msg = f"Function '{func.func_id}' cannot be called from the given entry point."
             raise KeyError(msg)
-    return get_dispatcher()(funcs, options, block)
+    return get_dispatcher()(funcs, options, entry_point, block)
 
 
 def srun(

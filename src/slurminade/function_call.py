@@ -6,7 +6,7 @@ class FunctionCall:
     A function call to be dispatched.
     """
 
-    def __init__(self, func_id, args: typing.Tuple, kwargs: typing.Dict):
+    def __init__(self, func_id: str, args: typing.Tuple, kwargs: typing.Dict):
         self.func_id = func_id  # the function id, as in FunctionMap
         self.args = args  # the positional arguments for the call
         self.kwargs = kwargs  # the keyword arguments for the call

@@ -2,9 +2,10 @@ import inspect
 import subprocess
 import typing
 from enum import Enum
-
+from pathlib import Path
+import logging
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
-from .function_map import FunctionMap
+from .function_map import FunctionMap, get_entry_point
 from .guard import guard_recursive_distribution
 from .job_reference import JobReference
 from .options import SlurmOptions
@@ -48,6 +49,7 @@ class SlurmFunction:
         self.func = func
         self.func_id = func_id
         self.call_policy = call_policy
+        self.defining_file = Path(inspect.getfile(func))
 
     def update_options(self, conf: typing.Dict[str, typing.Any]):
         self.special_slurm_opts.update(conf)
@@ -122,6 +124,17 @@ class SlurmFunction:
         else:
             msg = "Unknown call policy."
             raise RuntimeError(msg)
+        
+    def get_entry_point(self)->Path:
+        """
+        Returns the entry point for the function.
+        Either it is defined in the FunctionMap, or the defining file is used.
+        """
+        try:
+            return get_entry_point()
+        except FileNotFoundError:
+            logging.getLogger("slurminade").debug("Using defining file %s as entry point.", self.defining_file)
+            return self.defining_file
 
     def distribute(self, *args, **kwargs) -> JobReference:
         """
@@ -136,6 +149,7 @@ class SlurmFunction:
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
             self.special_slurm_opts,
+            entry_point=self.get_entry_point(),
             block=False,
         )
 
@@ -151,6 +165,7 @@ class SlurmFunction:
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
             self.special_slurm_opts,
+            entry_point=self.get_entry_point(),
             block=True,
         )
 
