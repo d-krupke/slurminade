@@ -123,7 +123,7 @@ class SlurmFunction:
             msg = "Unknown call policy."
             raise RuntimeError(msg)
 
-    def distribute(self, *args, **kwargs) -> int:
+    def distribute(self, *args, **kwargs) -> JobReference:
         """
         Try to distribute function call. If slurm is not available, a direct function
         call will be performed.
@@ -139,7 +139,7 @@ class SlurmFunction:
             block=False,
         )
 
-    def distribute_and_wait(self, *args, **kwargs) -> int:
+    def distribute_and_wait(self, *args, **kwargs) -> JobReference:
         """
         Distribute the function and wait for it to finish.
         :param args: The positional arguments.

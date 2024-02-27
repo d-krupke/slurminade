@@ -20,7 +20,6 @@ from .options import SlurmOptions
 class BundlingJobReference(JobReference):
     def __init__(self) -> None:
         super().__init__()
-        pass
 
     def get_job_id(self) -> typing.Optional[int]:
         return None
