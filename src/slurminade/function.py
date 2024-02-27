@@ -244,4 +244,4 @@ def shell(cmd: typing.Union[str, typing.List[str]]):
     Execute a command.
     :param cmd: The command to be executed.
     """
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, shell=True)
