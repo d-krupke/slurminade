@@ -66,7 +66,7 @@ class FunctionMap:
             raise ValueError(msg)
 
     @staticmethod
-    def register(func: typing.Callable) -> str:
+    def register(func: typing.Callable, allow_overwrite: bool = False) -> str:
         """
         Register a function, allowing it to be called just by its id.
         :param func: The function to be stored. Needs to be a proper function.
@@ -74,11 +74,15 @@ class FunctionMap:
         """
         FunctionMap.check_compatibility(func)
         func_id = FunctionMap.get_id(func)
-        if func_id in FunctionMap._data:
+        if func_id in FunctionMap._data and not allow_overwrite:
             msg = "Multiple function definitions!"
             raise RuntimeError(msg)
         FunctionMap._data[func_id] = func
         return func_id
+
+    @staticmethod
+    def exists(func_id: str) -> bool:
+        return func_id in FunctionMap._data
 
     @staticmethod
     def call(
@@ -97,13 +101,13 @@ class FunctionMap:
         return FunctionMap._data[func_id](*args, **kwargs)
 
     @staticmethod
-    def check_id(func_id: str) -> bool:
+    def check_id(func_id: str, entry_point: Path) -> bool:
         if func_id in FunctionMap._ids:
             return True
-        FunctionMap._ids = call_slurminade_to_get_function_ids(get_entry_point())
+        FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
         logging.getLogger("slurminade").info(
             "Entry point '%s' has functions %s",
-            get_entry_point(),
+            entry_point,
             list(FunctionMap._ids),
         )
         return func_id in FunctionMap._ids
@@ -134,7 +138,15 @@ def get_entry_point() -> Path:
     if FunctionMap.entry_point is None:
         import __main__
 
+        # check if attribute __file__ is available
+        if not hasattr(__main__, "__file__"):
+            msg = "No entry point known."
+            raise FileNotFoundError(msg)
+
         entry_point = __main__.__file__
+        if not Path(entry_point).is_file() or Path(entry_point).suffix != ".py":
+            msg = "No entry point known."
+            raise FileNotFoundError(msg)
 
         set_entry_point(entry_point)
     assert FunctionMap.entry_point is not None

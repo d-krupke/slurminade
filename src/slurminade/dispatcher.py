@@ -11,7 +11,9 @@ import shlex
 import shutil
 import subprocess
 import typing
+from pathlib import Path
 from typing import Any, Dict, Optional
+
 import simple_slurm
 
 from .conf import _get_conf
@@ -26,6 +28,7 @@ DEFAULT_MAX_ARG_LENGTH = 100000
 
 from .job_reference import JobReference
 
+
 class Dispatcher(abc.ABC):
     """
     Abstract dispatcher to be inherited by all concrete dispatchers.
@@ -38,6 +41,7 @@ class Dispatcher(abc.ABC):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> JobReference:
         """
@@ -93,6 +97,7 @@ class Dispatcher(abc.ABC):
         self,
         funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> JobReference:
         """
@@ -105,7 +110,7 @@ class Dispatcher(abc.ABC):
             funcs = [funcs]
         funcs = list(funcs)
         self._log_dispatch(funcs, options)
-        return self._dispatch(funcs, options, block)
+        return self._dispatch(funcs, options, entry_point, block)
 
     def is_sequential(self):
         """
@@ -125,6 +130,7 @@ class Dispatcher(abc.ABC):
         msg = "Joining is not implemented for this dispatcher."
         raise NotImplementedError(msg)
 
+
 class TestJobReference(JobReference):
     def get_job_id(self) -> None:
         return None
@@ -134,6 +140,7 @@ class TestJobReference(JobReference):
 
     def get_info(self) -> Dict[str, Any]:
         return {"info": "test"}
+
 
 class TestDispatcher(Dispatcher):
     """
@@ -150,8 +157,9 @@ class TestDispatcher(Dispatcher):
     def _dispatch(
         self,
         funcs: typing.Iterable[FunctionCall],
-        options: SlurmOptions,
-        block: bool = False,
+        options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,
+        block: bool = False,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()
         funcs = list(funcs)
@@ -167,15 +175,15 @@ class TestDispatcher(Dispatcher):
         args = shlex.split(command)
         if args[-2] != "temp":
             return
-        filename = args[-1]
-        if os.path.exists(filename):
-            os.remove(filename)
+        filename = Path(args[-1])
+        if filename.exists():
+            filename.unlink()
 
     def srun(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         dispatch_guard()
         self.sruns.append(command)
@@ -185,8 +193,8 @@ class TestDispatcher(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         dispatch_guard()
         self.sbatches.append(command)
@@ -195,6 +203,7 @@ class TestDispatcher(Dispatcher):
 
     def is_sequential(self):
         return True
+
 
 class SlurmJobReference(JobReference):
     def __init__(self, job_id, exit_code, mode: str):
@@ -209,10 +218,13 @@ class SlurmJobReference(JobReference):
         return self.exit_code
 
     def get_info(self) -> Dict[str, Any]:
-        return {"job_id": self.job_id, 
-                "exit_code": self.exit_code, 
-                "on_slurm": True,
-                "mode": self.mode}
+        return {
+            "job_id": self.job_id,
+            "exit_code": self.exit_code,
+            "on_slurm": True,
+            "mode": self.mode,
+        }
+
 
 class SlurmDispatcher(Dispatcher):
     """
@@ -242,6 +254,7 @@ class SlurmDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,
+        entry_point: Path,
         block: bool = False,
     ) -> SlurmJobReference:
         dispatch_guard()
@@ -254,9 +267,7 @@ class SlurmDispatcher(Dispatcher):
         if self._join_dependencies:
             options.add_dependencies(self._join_dependencies, "afterany")
         slurm = self._create_slurm_api(options)
-        command = create_slurminade_command(
-            get_entry_point(), funcs, self.max_arg_length
-        )
+        command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
         logging.getLogger("slurminade").debug(command)
         if block:
             ret = slurm.srun(command)
@@ -306,11 +317,12 @@ class SlurmDispatcher(Dispatcher):
             ret = slurm.srun(command)
         return SlurmJobReference(None, ret, "srun")
 
+
 class SubprocessJobReference(JobReference):
     def __init__(self):
         pass
 
-    def get_job_id(self) ->  Optional[int]:
+    def get_job_id(self) -> Optional[int]:
         return None
 
     def get_exit_code(self) -> Optional[int]:
@@ -318,6 +330,7 @@ class SubprocessJobReference(JobReference):
 
     def get_info(self) -> Dict[str, Any]:
         return {"on_slurm": False}
+
 
 class SubprocessDispatcher(Dispatcher):
     """
@@ -335,21 +348,20 @@ class SubprocessDispatcher(Dispatcher):
     def _dispatch(
         self,
         funcs: typing.Iterable[FunctionCall],
-        options: SlurmOptions,
-        block: bool = False,
+        options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,
+        block: bool = False,  # noqa: ARG002
     ) -> int:
         dispatch_guard()
-        command = create_slurminade_command(
-            get_entry_point(), funcs, self.max_arg_length
-        )
+        command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
         os.system(command)
         return -1
 
     def srun(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         dispatch_guard()
         logging.getLogger("slurminade").debug("SRUN %s", command)
@@ -358,21 +370,22 @@ class SubprocessDispatcher(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         self.srun(command)
 
     def is_sequential(self):
         return True
 
+
 class LocalJobReference(JobReference):
     def get_job_id(self) -> None:
         return None
-    
-    def get_exit_code(self) ->  None:
+
+    def get_exit_code(self) -> None:
         return None
-    
+
     def get_info(self) -> Dict[str, Any]:
         return {"on_slurm": False}
 
@@ -387,8 +400,9 @@ class DirectCallDispatcher(Dispatcher):
     def _dispatch(
         self,
         funcs: typing.Iterable[FunctionCall],
-        options: SlurmOptions,
-        block: bool = False,
+        options: SlurmOptions,  # noqa: ARG002
+        entry_point: Path,  # noqa: ARG002
+        block: bool = False,  # noqa: ARG002
     ) -> LocalJobReference:
         dispatch_guard()
         for func in funcs:
@@ -398,8 +412,8 @@ class DirectCallDispatcher(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         dispatch_guard()
         subprocess.run(command, check=True)
@@ -408,8 +422,8 @@ class DirectCallDispatcher(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
+        conf: typing.Optional[typing.Dict] = None,  # noqa: ARG002
+        simple_slurm_kwargs: typing.Optional[typing.Dict] = None,  # noqa: ARG002
     ):
         return self.srun(command)
 
@@ -454,8 +468,9 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
 def dispatch(
     funcs: typing.Union[FunctionCall, typing.Iterable[FunctionCall]],
     options: SlurmOptions,
+    entry_point: Path,
     block: bool = False,
-) -> int:
+) -> JobReference:
     """
     Distribute function calls with the current dispatcher.
     :param funcs: The functions calls to be distributed.
@@ -464,17 +479,17 @@ def dispatch(
     """
     funcs = list(funcs) if not isinstance(funcs, FunctionCall) else [funcs]
     for func in funcs:
-        if not FunctionMap.check_id(func.func_id):
+        if not FunctionMap.check_id(func.func_id, entry_point):
             msg = f"Function '{func.func_id}' cannot be called from the given entry point."
             raise KeyError(msg)
-    return get_dispatcher()(funcs, options, block)
+    return get_dispatcher()(funcs, options, entry_point, block)
 
 
 def srun(
     command: typing.Union[str, typing.List[str]],
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
     simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
-) -> int:
+) -> JobReference:
     """
     Call srun with the current dispatcher. This command is directly
     executed and only terminates after completion.
@@ -499,7 +514,7 @@ def sbatch(
     command: typing.Union[str, typing.List[str]],
     conf: typing.Union[SlurmOptions, typing.Dict, None] = None,
     simple_slurm_kwargs: typing.Optional[typing.Dict] = None,
-) -> int:
+) -> JobReference:
     """
     The command is scheduled and the function returns immediately.
     :param command: A system command, e.g. `echo hello world > foobar.txt`.

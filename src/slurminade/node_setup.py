@@ -5,12 +5,14 @@ from .guard import on_slurm_node
 
 _no_setup = False
 
+
 def disable_setup():
     """
     Disable the setup function. This is useful for testing.
     """
     global _no_setup
     _no_setup = True
+
 
 def node_setup(func: typing.Callable):
     """

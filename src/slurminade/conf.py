@@ -12,10 +12,10 @@ CONFIG_NAME = ".slurminade_default.json"
 __default_conf: typing.Dict = {}
 
 
-def _load_conf(path):
+def _load_conf(path: Path):
     try:
-        if os.path.isfile(path):
-            with open(path) as f:
+        if path.is_file():
+            with path.open() as f:
                 return json.load(f)
         else:
             return {}
@@ -25,6 +25,11 @@ def _load_conf(path):
 
 
 def update_default_configuration(conf=None, **kwargs):
+    """
+    Adds or updates the default configuration.
+    :param conf: A dictionary with the configuration.
+    :param kwargs: Configuration parameters. (alternative to giving a dictionary)
+    """
     if conf:
         __default_conf.update(conf)
     if kwargs:
@@ -32,18 +37,24 @@ def update_default_configuration(conf=None, **kwargs):
 
 
 def _load_default_conf():
-    path = os.path.join(Path.home(), CONFIG_NAME)
+    path = Path.home() / CONFIG_NAME
     update_default_configuration(_load_conf(path))
     if "XDG_CONFIG_HOME" in os.environ:
-        path = os.path.join(os.environ["XDG_CONFIG_HOME"], "slurminade", CONFIG_NAME)
+        path = Path(os.environ["XDG_CONFIG_HOME"]) / "slurminade" / CONFIG_NAME
         update_default_configuration(_load_conf(path))
-    update_default_configuration(_load_conf(CONFIG_NAME))
+    update_default_configuration(_load_conf(Path(CONFIG_NAME)))
 
 
 _load_default_conf()
 
 
 def set_default_configuration(conf=None, **kwargs):
+    """
+    Replaces the default configuration.
+    This will overwrite the default configuration with the given one.
+    :param conf: A dictionary with the configuration.
+    :param kwargs: Configuration parameters. (alternative to giving a dictionary)
+    """
     __default_conf = {}
     update_default_configuration(conf, **kwargs)
 

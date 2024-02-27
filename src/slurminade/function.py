@@ -1,13 +1,16 @@
 import inspect
+import logging
 import subprocess
 import typing
 from enum import Enum
+from pathlib import Path
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
-from .function_map import FunctionMap
+from .function_map import FunctionMap, get_entry_point
 from .guard import guard_recursive_distribution
-from .options import SlurmOptions
 from .job_reference import JobReference
+from .options import SlurmOptions
+
 
 class CallPolicy(Enum):
     """
@@ -47,12 +50,15 @@ class SlurmFunction:
         self.func = func
         self.func_id = func_id
         self.call_policy = call_policy
+        self.defining_file = Path(inspect.getfile(func))
 
     def update_options(self, conf: typing.Dict[str, typing.Any]):
         self.special_slurm_opts.update(conf)
 
     def wait_for(
-        self, job_ids: typing.Union[JobReference, typing.Iterable[JobReference]], method: str = "afterany"
+        self,
+        job_ids: typing.Union[JobReference, typing.Iterable[JobReference]],
+        method: str = "afterany",
     ) -> "SlurmFunction":
         """
         Add a dependency to a distribution.
@@ -76,10 +82,15 @@ class SlurmFunction:
             msg += " This is probably an error in your code."
             msg += " Maybe you are using `Batch` but flush outside of the `with` block?"
             raise RuntimeError(msg)
-        if any(jid.get_job_id() is None for jid in job_ids) and not get_dispatcher().is_sequential():
+        if (
+            any(jid.get_job_id() is None for jid in job_ids)
+            and not get_dispatcher().is_sequential()
+        ):
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(msg)
-        sfunc.special_slurm_opts.add_dependencies(list(jid.get_job_id() for jid in job_ids), method)
+        sfunc.special_slurm_opts.add_dependencies(
+            [jid.get_job_id() for jid in job_ids], method
+        )
         return sfunc
 
     def with_options(self, **kwargs) -> "SlurmFunction":
@@ -115,7 +126,20 @@ class SlurmFunction:
             msg = "Unknown call policy."
             raise RuntimeError(msg)
 
-    def distribute(self, *args, **kwargs) -> int:
+    def get_entry_point(self) -> Path:
+        """
+        Returns the entry point for the function.
+        Either it is defined in the FunctionMap, or the defining file is used.
+        """
+        try:
+            return get_entry_point()
+        except FileNotFoundError:
+            logging.getLogger("slurminade").debug(
+                "Using defining file %s as entry point.", self.defining_file
+            )
+            return self.defining_file
+
+    def distribute(self, *args, **kwargs) -> JobReference:
         """
         Try to distribute function call. If slurm is not available, a direct function
         call will be performed.
@@ -128,10 +152,11 @@ class SlurmFunction:
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
             self.special_slurm_opts,
+            entry_point=self.get_entry_point(),
             block=False,
         )
 
-    def distribute_and_wait(self, *args, **kwargs) -> int:
+    def distribute_and_wait(self, *args, **kwargs) -> JobReference:
         """
         Distribute the function and wait for it to finish.
         :param args: The positional arguments.
@@ -143,6 +168,7 @@ class SlurmFunction:
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
             self.special_slurm_opts,
+            entry_point=self.get_entry_point(),
             block=True,
         )
 
@@ -192,10 +218,35 @@ def slurmify(
     return dec
 
 
-@slurmify()
-def exec(cmd: typing.Union[str, typing.List[str]]):
+def _slurmify(
+    allow_overwrite: bool, **args
+) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+    """
+    Decorator: Make a function distributable to slurm.
+    Usage:
+
+    .. code-block:: python
+
+        @slurmify_()
+        def func(a, b):
+            pass
+
+    :param f: Function
+    :param args: Special slurm options for this function.
+    :return: A decorated function, callable with slurm.
+    """
+
+    def dec(func) -> SlurmFunction:
+        func_id = FunctionMap.register(func, allow_overwrite=allow_overwrite)
+        return SlurmFunction(args, func, func_id)
+
+    return dec
+
+
+@_slurmify(allow_overwrite=True)
+def shell(cmd: typing.Union[str, typing.List[str]]):
     """
     Execute a command.
     :param cmd: The command to be executed.
     """
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, shell=True)

@@ -55,7 +55,7 @@ Project structure:
 """
 
 # flake8: noqa F401
-from .function import slurmify
+from .function import slurmify, shell
 from .conf import update_default_configuration, set_default_configuration
 from .guard import (
     set_dispatch_limit,
@@ -94,6 +94,7 @@ __all__ = [
     "TestDispatcher",
     "SubprocessDispatcher",
     "set_entry_point",
+    "shell",
     "node_setup",
 ]
 

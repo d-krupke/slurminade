@@ -14,6 +14,7 @@ from .function_map import FunctionMap, set_entry_point
 from .guard import prevent_distribution
 from .node_setup import disable_setup
 
+
 @click.command()
 @click.option(
     "--root",
@@ -40,7 +41,7 @@ def main(root, calls, fromfile, listfuncs):
     if listfuncs:
         disable_setup()
     set_entry_point(root)
-    with open(root) as f:
+    with Path(root).open() as f:
         code = "".join(f.readlines())
 
     glob = dict(globals())
@@ -49,12 +50,12 @@ def main(root, calls, fromfile, listfuncs):
     exec(code, glob)
 
     if listfuncs:
-        print(json.dumps(FunctionMap.get_all_ids()))  # noqa T201
+        print(json.dumps(FunctionMap.get_all_ids()))  # noqa: T201
         return
     if calls:
         function_calls = json.loads(calls)
     elif fromfile:
-        with open(fromfile) as f:
+        with Path(fromfile).open() as f:
             logging.getLogger("slurminade").info(
                 f"Reading function calls from {fromfile}."
             )
