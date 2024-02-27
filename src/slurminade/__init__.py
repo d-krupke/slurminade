@@ -53,6 +53,12 @@ Project structure:
 - guard.py: Contains code to prevent you accidentally DDoSing your infrastructure.
 - options.py: Contains a simple data structure to save slurm options.
 """
+# set default logging
+import logging
+import sys
+
+# Set up the root logger to print to stdout by default
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 # flake8: noqa F401
 from .function import slurmify, shell
@@ -97,10 +103,3 @@ __all__ = [
     "shell",
     "node_setup",
 ]
-
-# set default logging
-import logging
-import sys
-
-# Set up the root logger to print to stdout by default
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)

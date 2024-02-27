@@ -118,13 +118,12 @@ class SlurmFunction:
         """
         if self.call_policy == CallPolicy.LOCALLY:
             return self.run_locally(*args, **kwargs)
-        elif self.call_policy == CallPolicy.DISTRIBUTED:
+        if self.call_policy == CallPolicy.DISTRIBUTED:
             return self.distribute(*args, **kwargs)
-        elif self.call_policy == CallPolicy.DISTRIBUTED_BLOCKING:
+        if self.call_policy == CallPolicy.DISTRIBUTED_BLOCKING:
             return self.distribute_and_wait(*args, **kwargs)
-        else:
-            msg = "Unknown call policy."
-            raise RuntimeError(msg)
+        msg = "Unknown call policy."
+        raise RuntimeError(msg)
 
     def get_entry_point(self) -> Path:
         """

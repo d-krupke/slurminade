@@ -3,6 +3,7 @@ This file saves the default configuration for slurm.
 """
 
 import json
+import logging
 import os.path
 import typing
 from pathlib import Path
@@ -20,7 +21,9 @@ def _load_conf(path: Path):
         else:
             return {}
     except Exception as e:
-        print(f"slurminade could not open default configuration {path}!\n{e!s}")
+        logging.getLogger("slurminade").error(
+            f"slurminade could not open default configuration {path}!\n{e!s}"
+        )
     return {}
 
 

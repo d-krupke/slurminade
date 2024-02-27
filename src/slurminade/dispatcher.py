@@ -21,12 +21,11 @@ from .execute_cmds import create_slurminade_command
 from .function_call import FunctionCall
 from .function_map import FunctionMap, get_entry_point
 from .guard import dispatch_guard
+from .job_reference import JobReference
 from .options import SlurmOptions
 
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
 DEFAULT_MAX_ARG_LENGTH = 100000
-
-from .job_reference import JobReference
 
 
 class Dispatcher(abc.ABC):

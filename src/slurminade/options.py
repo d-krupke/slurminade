@@ -11,8 +11,9 @@ class SlurmOptions(dict):
     def _items(self):
         for k, v in self.items():
             if isinstance(v, dict):
-                v = SlurmOptions(**v)
-            yield k, v
+                yield k, SlurmOptions(**v)
+            else:
+                yield k, v
 
     def __hash__(self):
         return hash(tuple(sorted(hash((k, v)) for k, v in self._items())))

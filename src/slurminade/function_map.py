@@ -23,8 +23,8 @@ class FunctionMap:
     # The slurm node just executes the file content of a script, so the file name is lost.
     # slurminade will set this value in the beginning to reconstruct it.
     entry_point: typing.Optional[str] = None
-    _data = {}
-    _ids = set()
+    _data: typing.ClassVar[typing.Dict[str, typing.Callable]] = {}
+    _ids: typing.ClassVar[typing.Set[str]] = set()
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
