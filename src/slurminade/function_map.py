@@ -133,6 +133,9 @@ def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:
 def get_entry_point() -> Path:
     if FunctionMap.entry_point is None:
         import __main__
+        # check if attribute __file__ is available
+        if not hasattr(__main__, "__file__"):
+            raise FileNotFoundError("No entry point known.")
 
         entry_point = __main__.__file__
 
