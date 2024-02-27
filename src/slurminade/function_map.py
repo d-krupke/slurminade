@@ -97,13 +97,13 @@ class FunctionMap:
         return FunctionMap._data[func_id](*args, **kwargs)
 
     @staticmethod
-    def check_id(func_id: str) -> bool:
+    def check_id(func_id: str, entry_point: Path) -> bool:
         if func_id in FunctionMap._ids:
             return True
-        FunctionMap._ids = call_slurminade_to_get_function_ids(get_entry_point())
+        FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
         logging.getLogger("slurminade").info(
             "Entry point '%s' has functions %s",
-            get_entry_point(),
+            entry_point,
             list(FunctionMap._ids),
         )
         return func_id in FunctionMap._ids
@@ -138,6 +138,8 @@ def get_entry_point() -> Path:
             raise FileNotFoundError("No entry point known.")
 
         entry_point = __main__.__file__
+        if not Path(entry_point).is_file() or Path(entry_point).suffix != ".py":
+            raise FileNotFoundError("No entry point known.")
 
         set_entry_point(entry_point)
     assert FunctionMap.entry_point is not None

@@ -483,7 +483,7 @@ def dispatch(
     """
     funcs = list(funcs) if not isinstance(funcs, FunctionCall) else [funcs]
     for func in funcs:
-        if not FunctionMap.check_id(func.func_id):
+        if not FunctionMap.check_id(func.func_id, entry_point):
             msg = f"Function '{func.func_id}' cannot be called from the given entry point."
             raise KeyError(msg)
     return get_dispatcher()(funcs, options, entry_point, block)
