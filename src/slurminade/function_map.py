@@ -7,6 +7,7 @@ import inspect
 import logging
 import pathlib
 import typing
+from typing import Optional
 from pathlib import Path
 
 from .execute_cmds import call_slurminade_to_get_function_ids
@@ -24,7 +25,7 @@ class FunctionMap:
     # slurminade will set this value in the beginning to reconstruct it.
     entry_point: typing.Optional[str] = None
     _data = {}
-    _ids = set()
+    _ids: Optional[set] = set()
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
@@ -102,9 +103,20 @@ class FunctionMap:
 
     @staticmethod
     def check_id(func_id: str, entry_point: Path) -> bool:
+        if FunctionMap._ids is None:
+            return True
         if func_id in FunctionMap._ids:
             return True
-        FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
+        try:
+            # Try to identify the available function ids when the entry point is known.
+            # This can help detect some bugs early on.
+            FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
+        except Exception as e:
+            logging.getLogger("slurminade").error(
+                "Cannot verify function ids before submitting to slurm: %s", e
+            )
+            FunctionMap._ids = None
+            return True
         logging.getLogger("slurminade").info(
             "Entry point '%s' has functions %s",
             entry_point,
