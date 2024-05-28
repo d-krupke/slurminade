@@ -112,8 +112,8 @@ class FunctionMap:
             # This can help detect some bugs early on.
             FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
         except Exception as e:
-            logging.getLogger("slurminade").error(
-                "Cannot verify function ids before submitting to slurm: %s", e
+            logging.getLogger("slurminade").warning(
+                "Cannot verify function ids before submitting to slurm: %s. This is not critical, things will just be more difficult to debug in case you make an error.", e
             )
             FunctionMap._ids = None
             return True
