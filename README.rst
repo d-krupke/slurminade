@@ -359,6 +359,7 @@ The project is reasonably easy:
 Changes
 -------
 
+- 1.1.1: Fixing bug when there is some output to stdout when loading the code, such as deprecation warnings.
 - 1.1.0: Slurminade can now be called from iPython, too! `exec` has been renamed `shell` to prevent confusion with the Python call `exec` which will evaluate a string as Python code.
 - 1.0.1: Dispatcher now return jobs references instead of job ids. This allows to do some fancier stuff in the future, when the jobs infos are only available a short time after the job has been submitted.
 - 0.10.1: FIX: Listing functions will no longer execute setup functions.

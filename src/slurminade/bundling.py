@@ -1,6 +1,7 @@
 """
 Contains code for bundling function calls together.
 """
+
 import logging
 import typing
 from collections import defaultdict

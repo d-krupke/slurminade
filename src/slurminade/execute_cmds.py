@@ -63,5 +63,6 @@ def call_slurminade_to_get_function_ids(entry_point: Path) -> typing.Set[str]:
         "--listfuncs",
     ]
     out = subprocess.check_output(cmd).decode()
+    out = out.strip().split("\n")[-1].strip()
     ids = json.loads(out)
     return set(ids)

@@ -3,6 +3,7 @@ from pathlib import Path
 import slurminade
 
 test_file_path = Path("./f_test_file.txt")
+print("NOISE123")
 
 
 @slurminade.slurmify()
@@ -11,7 +12,7 @@ def f(s):
         file.write(s)
 
 
-def test_create_command():
+def test_create_command_with_noise():
     slurminade.set_entry_point(__file__)
     if test_file_path.exists():
         test_file_path.unlink()

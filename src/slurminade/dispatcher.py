@@ -4,6 +4,7 @@ It can be accessed with `get_dispatcher` and set with `set_dispatcher`.
 This allows to change the behaviour of the distribution, e.g., we use it for batch:
 Batch simply wraps the dispatcher by a buffered version.
 """
+
 import abc
 import logging
 import os
@@ -442,7 +443,7 @@ def get_dispatcher() -> Dispatcher:
     to allow compatibility.
     :return: The dispatcher.
     """
-    global __dispatcher
+    global __dispatcher  # noqa: PLW0603
     if __dispatcher is None:
         try:
             __dispatcher = SlurmDispatcher()
@@ -459,7 +460,7 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
     :param dispatcher: The dispatcher to be used.
     :return: None
     """
-    global __dispatcher
+    global __dispatcher  # noqa: PLW0603
     __dispatcher = dispatcher
     assert dispatcher == get_dispatcher()
 

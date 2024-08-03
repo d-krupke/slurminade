@@ -61,25 +61,25 @@ import sys
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 # flake8: noqa F401
-from .function import slurmify, shell
-from .conf import update_default_configuration, set_default_configuration
+from .bundling import Batch, JobBundling
+from .conf import set_default_configuration, update_default_configuration
+from .dispatcher import (
+    SlurmDispatcher,
+    SubprocessDispatcher,
+    TestDispatcher,
+    get_dispatcher,
+    join,
+    sbatch,
+    set_dispatcher,
+    srun,
+)
+from .function import shell, slurmify
+from .function_map import set_entry_point
 from .guard import (
-    set_dispatch_limit,
     allow_recursive_distribution,
     disable_warning_on_repeated_flushes,
+    set_dispatch_limit,
 )
-from .bundling import JobBundling, Batch
-from .dispatcher import (
-    srun,
-    sbatch,
-    join,
-    SlurmDispatcher,
-    set_dispatcher,
-    get_dispatcher,
-    TestDispatcher,
-    SubprocessDispatcher,
-)
-from .function_map import set_entry_point
 from .node_setup import node_setup
 
 __all__ = [
