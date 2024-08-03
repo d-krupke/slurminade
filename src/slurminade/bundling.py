@@ -88,7 +88,8 @@ class JobBundling(Dispatcher):
         :return: A list of job ids.
         """
         job_ids = []
-        for entry_point, opt, tasks in self._tasks.items():
+        for entry_point, opt, tasks_ in self._tasks.items():
+            tasks = tasks_
             while tasks:
                 job_id = self.subdispatcher(tasks[: self.max_size], opt, entry_point)
                 job_ids.append(job_id)

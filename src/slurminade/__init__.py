@@ -53,6 +53,7 @@ Project structure:
 - guard.py: Contains code to prevent you accidentally DDoSing your infrastructure.
 - options.py: Contains a simple data structure to save slurm options.
 """
+
 # set default logging
 import logging
 import sys

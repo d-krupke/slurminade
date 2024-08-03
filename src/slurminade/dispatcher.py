@@ -158,7 +158,7 @@ class TestDispatcher(Dispatcher):
         self,
         funcs: typing.Iterable[FunctionCall],
         options: SlurmOptions,  # noqa: ARG002
-        entry_point: Path,
+        entry_point: Path,  # noqa: ARG002
         block: bool = False,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()

@@ -18,7 +18,7 @@ _exec_flag = False
 
 
 def on_slurm_node():
-    global _exec_flag
+    global _exec_flag  # noqa: PLW0602
     return _exec_flag
 
 
@@ -37,7 +37,7 @@ def guard_recursive_distribution():
 
 
 def prevent_distribution():
-    global _exec_flag
+    global _exec_flag  # noqa: PLW0603
     _exec_flag = True
 
 
@@ -46,7 +46,7 @@ def allow_recursive_distribution() -> None:
     Allow recursive distribution. Dangerous!
     :return: None
     """
-    global _exec_flag
+    global _exec_flag  # noqa: PLW0603
     _exec_flag = False
 
 

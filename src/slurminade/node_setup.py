@@ -10,7 +10,7 @@ def disable_setup():
     """
     Disable the setup function. This is useful for testing.
     """
-    global _no_setup
+    global _no_setup  # noqa: PLW0603
     _no_setup = True
 
 
