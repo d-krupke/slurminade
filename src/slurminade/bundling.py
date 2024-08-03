@@ -76,33 +76,37 @@ class JobBundling(Dispatcher):
         self.max_size = max_size
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
-        self._all_job_ids = []
+        self._all_job_refs = []
 
-    def flush(self) -> typing.List[int]:
+    def flush(self) -> typing.List[JobReference]:
         """
-        Distribute all buffered tasks. Return the job ids used.
+        Distribute all buffered tasks. Return the jobs used.
         This method is called automatically when the context is exited.
-        However, you may want to call it manually to get the job ids,
+        However, you may want to call it manually to get the job references,
         for example to use them for dependency management with ``wait_for``.
         :param options: Only flush tasks with specific options.
-        :return: A list of job ids.
+        :return: A list of job references.
         """
-        job_ids = []
+        job_refs = []
         for entry_point, opt, tasks_ in self._tasks.items():
             tasks = tasks_
             while tasks:
-                job_id = self.subdispatcher(tasks[: self.max_size], opt, entry_point)
-                job_ids.append(job_id)
+                job_ref = self.subdispatcher(tasks[: self.max_size], opt, entry_point)
+                job_refs.append(job_ref)
                 tasks = tasks[self.max_size :]
         self._tasks.clear()
-        self._all_job_ids.extend(job_ids)
-        return job_ids
+        self._all_job_refs.extend(job_refs)
+        return job_refs
 
-    def get_all_job_ids(self):
+    def get_all_job_ids(self) -> typing.List[int]:
         """
         Return all job ids that have been used.
         """
-        return list(self._all_job_ids)
+        job_ids = [job_ref.get_job_id() for job_ref in self._all_job_refs]
+        return [jid for jid in job_ids if jid is not None]
+
+    def get_all_jobs(self) -> typing.List[JobReference]:
+        return list(self._all_job_refs)
 
     def add(self, func: SlurmFunction, *args, **kwargs):
         """
