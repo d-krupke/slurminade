@@ -4,6 +4,7 @@ It can be accessed with `get_dispatcher` and set with `set_dispatcher`.
 This allows to change the behaviour of the distribution, e.g., we use it for batch:
 Batch simply wraps the dispatcher by a buffered version.
 """
+
 import abc
 import logging
 import os
@@ -21,12 +22,11 @@ from .execute_cmds import create_slurminade_command
 from .function_call import FunctionCall
 from .function_map import FunctionMap, get_entry_point
 from .guard import dispatch_guard
+from .job_reference import JobReference
 from .options import SlurmOptions
 
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
 DEFAULT_MAX_ARG_LENGTH = 100000
-
-from .job_reference import JobReference
 
 
 class Dispatcher(abc.ABC):
@@ -443,7 +443,7 @@ def get_dispatcher() -> Dispatcher:
     to allow compatibility.
     :return: The dispatcher.
     """
-    global __dispatcher
+    global __dispatcher  # noqa: PLW0603
     if __dispatcher is None:
         try:
             __dispatcher = SlurmDispatcher()
@@ -460,7 +460,7 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
     :param dispatcher: The dispatcher to be used.
     :return: None
     """
-    global __dispatcher
+    global __dispatcher  # noqa: PLW0603
     __dispatcher = dispatcher
     assert dispatcher == get_dispatcher()
 

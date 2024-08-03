@@ -1,5 +1,4 @@
-import os.path
-import unittest
+from pathlib import Path
 
 import slurminade
 from slurminade.function import SlurmFunction
@@ -10,37 +9,36 @@ g_file = "./g_test_file.txt"
 
 @slurminade.slurmify()
 def f():
-    with open(f_file, "w") as file:
+    with Path(f_file).open("w") as file:
         file.write("test")
 
 
 def delete_f():
-    if os.path.exists(f_file):
-        os.remove(f_file)
+    Path(f_file).unlink(missing_ok=True)
 
 
 @slurminade.slurmify()
 def g(x, y):
-    with open(g_file, "w") as file:
+    with Path(g_file).open("w") as file:
         file.write(f"{x}:{y}")
 
 
 def delete_g():
-    if os.path.exists(g_file):
-        os.remove(g_file)
+    Path(g_file).unlink(missing_ok=True)
 
 
-class TestLocal(unittest.TestCase):
-    def test_1(self):
-        delete_f()
-        SlurmFunction.call(f.func_id)
-        assert os.path.exists(f_file)
-        delete_f()
+def test_local_1():
+    delete_f()
+    SlurmFunction.call(f.func_id)
+    assert Path(f_file).exists()
+    delete_f()
 
-    def test_2(self):
-        delete_g()
-        SlurmFunction.call(g.func_id, x="a", y=2)
-        assert os.path.exists(g_file)
-        with open(g_file) as file:
-            assert file.readline() == "a:2"
-        delete_g()
+
+def test_local_2():
+    delete_g()
+    SlurmFunction.call(g.func_id, x="a", y=2)
+
+    assert Path(g_file).exists()
+    with Path(g_file).open() as file:
+        assert file.readline() == "a:2"
+    delete_g()

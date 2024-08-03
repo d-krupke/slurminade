@@ -1,4 +1,4 @@
-from pytest import raises
+import pytest
 
 import slurminade
 
@@ -10,5 +10,5 @@ def test_dispatch_limit_batch():
 
     slurminade.set_entry_point(__file__)
 
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         f.distribute()

@@ -7,8 +7,8 @@ import inspect
 import logging
 import pathlib
 import typing
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from .execute_cmds import call_slurminade_to_get_function_ids
 
@@ -24,8 +24,8 @@ class FunctionMap:
     # The slurm node just executes the file content of a script, so the file name is lost.
     # slurminade will set this value in the beginning to reconstruct it.
     entry_point: typing.Optional[str] = None
-    _data = {}
-    _ids: Optional[set] = set()
+    _data: typing.ClassVar[dict] = {}
+    _ids: typing.ClassVar[Optional[set]] = set()
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
@@ -113,7 +113,8 @@ class FunctionMap:
             FunctionMap._ids = call_slurminade_to_get_function_ids(entry_point)
         except Exception as e:
             logging.getLogger("slurminade").warning(
-                "Cannot verify function ids before submitting to slurm: %s. This is not critical, things will just be more difficult to debug in case you make an error.", e
+                "Cannot verify function ids before submitting to slurm: %s. This is not critical, things will just be more difficult to debug in case you make an error.",
+                e,
             )
             FunctionMap._ids = None
             return True
