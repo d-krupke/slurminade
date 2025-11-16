@@ -43,7 +43,7 @@ def create_slurminade_command(
         # The argument is too long, create temporary file for the JSON
         fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
         logging.getLogger("slurminade").info(
-            f"Long function calls. Serializing function calls to temporary file {filename}"
+            "Long function calls. Serializing function calls to temporary file %s", filename
         )
         with os.fdopen(fd, "w") as f:
             f.write(json_calls)

@@ -12,6 +12,9 @@ from typing import Optional
 
 from .execute_cmds import call_slurminade_to_get_function_ids
 
+# Module-level logger for consistent logging
+_logger = logging.getLogger("slurminade.function_map")
+
 
 class FunctionMap:
     """
@@ -67,18 +70,28 @@ class FunctionMap:
             raise ValueError(msg)
 
     @staticmethod
-    def register(func: typing.Callable, allow_overwrite: bool = False) -> str:
+    def register(func: typing.Callable[..., typing.Any], allow_overwrite: bool = False) -> str:
         """
         Register a function, allowing it to be called just by its id.
-        :param func: The function to be stored. Needs to be a proper function.
-        :return: The function's id.
+
+        Args:
+            func: The function to be stored (must be a proper function)
+            allow_overwrite: Whether to allow overwriting existing registrations
+
+        Returns:
+            The function's unique ID
         """
         FunctionMap.check_compatibility(func)
         func_id = FunctionMap.get_id(func)
+
         if func_id in FunctionMap._data and not allow_overwrite:
+            _logger.error("Attempted to register duplicate function: %s", func_id)
             msg = "Multiple function definitions!"
             raise RuntimeError(msg)
+
         FunctionMap._data[func_id] = func
+        _logger.info("Registered slurmified function: %s", func_id)
+        _logger.debug("Total registered functions: %d", len(FunctionMap._data))
         return func_id
 
     @staticmethod

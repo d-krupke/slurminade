@@ -11,6 +11,9 @@ from .guard import guard_recursive_distribution
 from .job_reference import JobReference
 from .options import SlurmOptions
 
+# Module-level logger for consistent logging
+_logger = logging.getLogger("slurminade.function")
+
 
 class CallPolicy(Enum):
     """
@@ -41,18 +44,35 @@ class SlurmFunction:
 
     def __init__(
         self,
-        special_slurm_opts: typing.Dict,
-        func: typing.Callable,
+        special_slurm_opts: typing.Dict[str, typing.Any],
+        func: typing.Callable[..., typing.Any],
         func_id: str,
         call_policy: CallPolicy = CallPolicy.LOCALLY,
-    ):
+    ) -> None:
+        """
+        Initialize a SlurmFunction wrapper.
+
+        Args:
+            special_slurm_opts: Slurm options specific to this function
+            func: The callable to wrap
+            func_id: Unique identifier for this function
+            call_policy: How to call this function (locally, distributed, etc.)
+        """
         self.special_slurm_opts = SlurmOptions(**special_slurm_opts)
         self.func = func
         self.func_id = func_id
         self.call_policy = call_policy
         self.defining_file = Path(inspect.getfile(func))
+        _logger.debug("Created SlurmFunction for %s with policy %s", func_id, call_policy)
 
-    def update_options(self, conf: typing.Dict[str, typing.Any]):
+    def update_options(self, conf: typing.Dict[str, typing.Any]) -> None:
+        """
+        Update Slurm options for this function.
+
+        Args:
+            conf: Dictionary of options to update
+        """
+        _logger.debug("Updating options for %s: %s", self.func_id, conf)
         self.special_slurm_opts.update(conf)
 
     def wait_for(
@@ -103,19 +123,31 @@ class SlurmFunction:
         sfunc.update_options(kwargs)
         return sfunc
 
-    def _check(self, args, kwargs):
+    def _check(self, args: tuple[typing.Any, ...], kwargs: typing.Dict[str, typing.Any]) -> None:
         """
         Check if the arguments match the function signature.
+
+        Args:
+            args: Positional arguments
+            kwargs: Keyword arguments
+
+        Raises:
+            TypeError: If arguments don't match function signature
         """
         inspect.signature(self.func).bind(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """
         Direct call of the original function.
-        :param args: Positional arguments.
-        :param kwargs: Keyword arguments.
-        :return: The return value of the function.
+
+        Args:
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            The return value of the function (depends on call policy)
         """
+        _logger.debug("Calling %s with policy %s", self.func_id, self.call_policy)
         if self.call_policy == CallPolicy.LOCALLY:
             return self.run_locally(*args, **kwargs)
         if self.call_policy == CallPolicy.DISTRIBUTED:
@@ -133,20 +165,27 @@ class SlurmFunction:
         try:
             return get_entry_point()
         except FileNotFoundError:
-            logging.getLogger("slurminade").debug(
-                "Using defining file %s as entry point.", self.defining_file
+            _logger.debug(
+                "Using defining file %s as entry point for %s",
+                self.defining_file,
+                self.func_id
             )
             return self.defining_file
 
-    def distribute(self, *args, **kwargs) -> JobReference:
+    def distribute(self, *args: typing.Any, **kwargs: typing.Any) -> JobReference:
         """
         Try to distribute function call. If slurm is not available, a direct function
         call will be performed.
-        `f.distribute("hello")`
-        Call with function arguments.
-        :return: Job id. Not necessarily valid (usually -1 in this case).
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            Job reference (may be invalid if not using Slurm)
         """
         self._check(args, kwargs)
+        _logger.info("Distributing %s with %d args", self.func_id, len(args))
         guard_recursive_distribution()
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
@@ -155,14 +194,19 @@ class SlurmFunction:
             block=False,
         )
 
-    def distribute_and_wait(self, *args, **kwargs) -> JobReference:
+    def distribute_and_wait(self, *args: typing.Any, **kwargs: typing.Any) -> JobReference:
         """
         Distribute the function and wait for it to finish.
-        :param args: The positional arguments.
-        :param kwargs: The keyword arguments.
-        :return: The job id.
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            Job reference
         """
         self._check(args, kwargs)
+        _logger.info("Distributing %s (blocking) with %d args", self.func_id, len(args))
         guard_recursive_distribution()
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
@@ -171,20 +215,36 @@ class SlurmFunction:
             block=True,
         )
 
-    def run_locally(self, *args, **kwargs):
+    def run_locally(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """
-        Call the function locally.
-        `f.local("hello")`
-        Call with function arguments.
-        :return: The return value of the function.
+        Call the function locally (not distributed).
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            The return value of the function
         """
+        _logger.debug("Running %s locally with %d args", self.func_id, len(args))
         return self.func(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.func.__name__
 
     @staticmethod
-    def call(func_id, *args, **kwargs):
+    def call(func_id: str, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        """
+        Call a slurmified function by its ID.
+
+        Args:
+            func_id: The function identifier
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            The return value of the function
+        """
         return FunctionMap.call(func_id, args, kwargs)
 
 
