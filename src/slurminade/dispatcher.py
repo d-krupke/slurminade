@@ -28,6 +28,9 @@ from .options import SlurmOptions
 # MAX_ARG_STRLEN on a Linux system with PAGE_SIZE 4096 is 131072
 DEFAULT_MAX_ARG_LENGTH = 100000
 
+# Module-level logger for consistent logging
+_logger = logging.getLogger("slurminade.dispatcher")
+
 
 class Dispatcher(abc.ABC):
     """
@@ -83,14 +86,18 @@ class Dispatcher(abc.ABC):
         :return: Job id.
         """
 
-    def _log_dispatch(self, funcs: typing.List[FunctionCall], options: SlurmOptions):
+    def _log_dispatch(self, funcs: typing.List[FunctionCall], options: SlurmOptions) -> None:
+        """Log dispatching information with lazy formatting."""
         if len(funcs) == 1:
-            logging.getLogger("slurminade").info(
-                f"Dispatching task with options {options}: {funcs[0]}"
+            _logger.info(
+                "Dispatching task with options %s: %s", options, funcs[0]
             )
         else:
-            logging.getLogger("slurminade").info(
-                f"Dispatching task consisting of {len(funcs)} function calls with options {options}: {', '.join([str(f) for f in funcs])}"
+            _logger.info(
+                "Dispatching task with %d function calls and options %s: %s",
+                len(funcs),
+                options,
+                ", ".join(str(f) for f in funcs),
             )
 
     def __call__(
@@ -445,11 +452,13 @@ def get_dispatcher() -> Dispatcher:
     """
     global __dispatcher  # noqa: PLW0603
     if __dispatcher is None:
+        _logger.debug("No dispatcher set, creating default dispatcher")
         try:
             __dispatcher = SlurmDispatcher()
+            _logger.info("Using SlurmDispatcher (Slurm environment detected)")
         except RuntimeError as re:
-            logging.getLogger("slurminade").warning(str(re))
-            logging.getLogger("slurminade").warning("Using direct calls.")
+            _logger.warning("Slurm environment not found: %s", re)
+            _logger.warning("Using DirectCallDispatcher (local execution)")
             __dispatcher = DirectCallDispatcher()
     return __dispatcher
 
@@ -461,6 +470,9 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
     :return: None
     """
     global __dispatcher  # noqa: PLW0603
+    _logger.info(
+        "Setting dispatcher to %s", dispatcher.__class__.__name__
+    )
     __dispatcher = dispatcher
     assert dispatcher == get_dispatcher()
 
