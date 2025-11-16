@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 .idea
 examples/slurminade_example.txt
+
+# setuptools-scm generated version file
+src/slurminade/_version.py
