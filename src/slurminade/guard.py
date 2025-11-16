@@ -14,16 +14,32 @@ You can disable these security mechanisms by
 import logging
 import typing
 
+# Module-level logger for security and guard operations
+_logger = logging.getLogger("slurminade.guard")
+
 _exec_flag = False
 
 
-def on_slurm_node():
+def on_slurm_node() -> bool:
+    """
+    Check if currently executing on a Slurm node.
+
+    Returns:
+        True if on a Slurm node, False otherwise
+    """
     global _exec_flag  # noqa: PLW0602
     return _exec_flag
 
 
-def guard_recursive_distribution():
+def guard_recursive_distribution() -> None:
+    """
+    Prevent recursive task distribution (tasks distributing more tasks).
+
+    Raises:
+        RuntimeError: If attempting to distribute from a Slurm node
+    """
     if on_slurm_node():
+        _logger.error("Attempted recursive distribution from Slurm node")
         msg = """
         You tried to distribute a task recursively. This is not allowed by default,
         because it probably indicates a bug in your code. To save you from accidentally
@@ -36,25 +52,52 @@ def guard_recursive_distribution():
         raise RuntimeError(msg)
 
 
-def prevent_distribution():
+def prevent_distribution() -> None:
+    """
+    Mark current execution as being on a Slurm node (prevents distribution).
+    """
     global _exec_flag  # noqa: PLW0603
+    _logger.debug("Preventing distribution - marking as Slurm node execution")
     _exec_flag = True
 
 
 def allow_recursive_distribution() -> None:
     """
     Allow recursive distribution. Dangerous!
-    :return: None
+
+    Warning:
+        This disables an important safety mechanism. Use with caution.
     """
     global _exec_flag  # noqa: PLW0603
+    _logger.warning("Recursive distribution enabled - safety mechanism disabled")
     _exec_flag = False
 
 
 class TooManyDispatchesError(RuntimeError):
-    def __init__(self, n_calls):
-        self.n_calls = n_calls
+    """
+    Exception raised when dispatch limit is exceeded.
 
-    def __str__(self):
+    Attributes:
+        n_calls: The maximum number of calls that was configured
+    """
+
+    def __init__(self, n_calls: int) -> None:
+        """
+        Initialize the error.
+
+        Args:
+            n_calls: The maximum number of calls allowed
+        """
+        self.n_calls = n_calls
+        super().__init__(str(self))
+
+    def __str__(self) -> str:
+        """
+        Generate error message.
+
+        Returns:
+            Error message describing the dispatch limit exceeded
+        """
         return (
             f"Exceeded the dispatch limit of {self.n_calls} calls. "
             f"This limit has been introduced to prevent you from overloading your "
@@ -64,19 +107,52 @@ class TooManyDispatchesError(RuntimeError):
 
 
 class _DispatchGuard:
-    def __init__(self, max_calls):
+    """
+    Guard to track and limit the number of task dispatches.
+
+    Attributes:
+        max_calls: Maximum number of dispatch calls allowed (None for unlimited)
+        remaining_calls: Number of remaining allowed calls
+    """
+
+    def __init__(self, max_calls: typing.Optional[int]) -> None:
+        """
+        Initialize the dispatch guard.
+
+        Args:
+            max_calls: Maximum number of dispatches allowed (None for unlimited)
+        """
         self.max_calls = max_calls
         self.remaining_calls = max_calls
+        _logger.debug("Created DispatchGuard with max_calls=%s", max_calls)
 
-    def __call__(self):
+    def __call__(self) -> typing.Optional[int]:
+        """
+        Check and decrement the dispatch counter.
+
+        Returns:
+            Number of remaining calls, or None if unlimited
+
+        Raises:
+            TooManyDispatchesError: If dispatch limit exceeded
+        """
         if not self.max_calls:
             return None
         if self.remaining_calls <= 0:
+            _logger.error("Dispatch limit of %d exceeded", self.max_calls)
             raise TooManyDispatchesError(self.max_calls)
         self.remaining_calls -= 1
+        _logger.debug("Dispatch guard: %d/%d calls remaining", self.remaining_calls, self.max_calls)
         return self.remaining_calls
 
-    def set_limit(self, n):
+    def set_limit(self, n: typing.Optional[int]) -> None:
+        """
+        Set a new dispatch limit.
+
+        Args:
+            n: New maximum number of dispatches (None for unlimited)
+        """
+        _logger.info("Setting dispatch limit to %s", n)
         self.max_calls = n
         self.remaining_calls = n
 
@@ -84,12 +160,15 @@ class _DispatchGuard:
 dispatch_guard = _DispatchGuard(100)
 
 
-def set_dispatch_limit(n: typing.Optional[int]):
+def set_dispatch_limit(n: typing.Optional[int]) -> None:
     """
-    Set a limit to the number of dispatches. This feature has been introduced to
-    prevent you from accidentally DDoSing you Slurm environment due to a bug.
-    :param n: The maximal number of dispatches.
-    :return: None
+    Set a limit to the number of dispatches.
+
+    This feature has been introduced to prevent you from accidentally DDoSing
+    your Slurm environment due to a bug.
+
+    Args:
+        n: The maximal number of dispatches (None for unlimited)
     """
     dispatch_guard.set_limit(n)
 
@@ -101,10 +180,11 @@ class BatchGuard:
     your context, to get the job ids for dependency management.
     """
 
-    already_warned = False
+    already_warned: bool = False
 
     def __init__(self) -> None:
-        self._num_of_flushes = 0
+        """Initialize the batch guard."""
+        self._num_of_flushes: int = 0
 
     def _get_error_msg(self) -> str:
         return """
@@ -121,17 +201,28 @@ class BatchGuard:
         """
 
     def report_flush(self, num_tasks: int) -> None:
+        """
+        Report a batch flush operation.
+
+        Args:
+            num_tasks: Number of tasks being flushed
+        """
         if num_tasks == 0:  # ignore empty flushes
             return
         self._num_of_flushes += 1
+        _logger.debug("Batch flush #%d with %d tasks", self._num_of_flushes, num_tasks)
         if self._num_of_flushes == 2 and not self.already_warned:
+            _logger.warning("Multiple batch flushes detected")
             logging.getLogger("slurminade").warning(self._get_error_msg())
             self.already_warned = True
 
 
-def disable_warning_on_repeated_flushes():
+def disable_warning_on_repeated_flushes() -> None:
     """
-    Disable the warning on multiple flushes. This is useful if you want to flush
-    multiple times in a loop, without getting a warning.
+    Disable the warning on multiple flushes.
+
+    This is useful if you intentionally want to flush multiple times in a loop,
+    without getting a warning.
     """
+    _logger.info("Disabling repeated flush warnings")
     BatchGuard.already_warned = True
