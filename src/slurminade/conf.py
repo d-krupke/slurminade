@@ -58,6 +58,7 @@ def set_default_configuration(conf=None, **kwargs):
     :param conf: A dictionary with the configuration.
     :param kwargs: Configuration parameters. (alternative to giving a dictionary)
     """
+    global __default_conf
     __default_conf = {}
     update_default_configuration(conf, **kwargs)
 

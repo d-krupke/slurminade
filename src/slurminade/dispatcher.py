@@ -354,8 +354,8 @@ class SubprocessDispatcher(Dispatcher):
     ) -> int:
         dispatch_guard()
         command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
-        os.system(command)
-        return -1
+        result = subprocess.run(command, shell=False, check=False)
+        return result.returncode
 
     def srun(
         self,

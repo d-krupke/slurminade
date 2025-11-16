@@ -246,6 +246,12 @@ def _slurmify(
 def shell(cmd: typing.Union[str, typing.List[str]]):
     """
     Execute a command.
-    :param cmd: The command to be executed.
+    :param cmd: The command to be executed. Can be a string (will use shell=True)
+               or a list of arguments (will use shell=False for better security).
     """
-    subprocess.run(cmd, check=True, shell=True)
+    if isinstance(cmd, str):
+        # String commands require shell=True to handle pipes, redirects, etc.
+        subprocess.run(cmd, check=True, shell=True)
+    else:
+        # List of arguments is safer - no shell needed
+        subprocess.run(cmd, check=True, shell=False)

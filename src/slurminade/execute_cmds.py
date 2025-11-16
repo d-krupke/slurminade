@@ -17,7 +17,7 @@ from .function_call import FunctionCall
 
 def create_slurminade_command(
     entry_point: Path, funcs: typing.Iterable[FunctionCall], max_arg_length: int
-) -> str:
+) -> typing.List[str]:
     """
     Creates a terminal command that calls the Python module `slurminade.execute` with the
     provided function calls as an argument. If the total length of the function calls
@@ -25,21 +25,21 @@ def create_slurminade_command(
     created to pass the function calls instead.
     :param funcs: The function calls to be dispatched.
     :param max_arg_length: The maximum allowed length of a command line argument.
-    :returns: A string representing the command to be executed in the terminal.
+    :returns: A list of command arguments to be executed (safer than shell string).
     """
     if not entry_point.exists():
         msg = f"Entry point {entry_point} does not exist."
         raise FileNotFoundError(msg)
 
-    command = (
-        f"{sys.executable} -m slurminade.execute --root {shlex.quote(str(entry_point))}"
-    )
+    command = [sys.executable, "-m", "slurminade.execute", "--root", str(entry_point)]
 
     # Serialize function calls as JSON
     json_calls = json.dumps([f.to_json() for f in funcs])
-    serialized_calls = shlex.quote(json_calls)
 
-    if len(serialized_calls) > max_arg_length:
+    # Note: We quote for length estimation, but won't use quoted version in list
+    serialized_calls_quoted = shlex.quote(json_calls)
+
+    if len(serialized_calls_quoted) > max_arg_length:
         # The argument is too long, create temporary file for the JSON
         fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
         logging.getLogger("slurminade").info(
@@ -47,9 +47,9 @@ def create_slurminade_command(
         )
         with os.fdopen(fd, "w") as f:
             f.write(json_calls)
-        command += f" --fromfile {filename}"
+        command.extend(["--fromfile", filename])
     else:
-        command += f" --calls {serialized_calls}"
+        command.extend(["--calls", json_calls])
     return command
 
 
