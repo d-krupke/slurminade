@@ -344,17 +344,19 @@ Project structure
 
 The project is reasonably easy:
 
--  bundling.py: Contains code for bundling tasks, so we don’t spam slurm
-   with too many.
--  conf.py: Contains code for managing the configuration of slurm.
--  dispatcher.py: Contains code for actually dispatching tasks to slurm.
--  execute.py: Contains code to execute the task on the slurm node.
--  function.py: Contains the code for making a function
-   slurm-compatible.
--  function_map.py: Saves all the slurmified functions.
--  guard.py: Contains code to prevent you accidentally DDoSing your
-   infrastructure.
--  options.py: Contains a simple data structure to save slurm options.
+-  bundling.py: Bundling multiple function calls into a single slurm job.
+-  conf.py: Managing the default slurm configuration.
+-  dispatcher.py: Dispatching function calls to slurm or local execution.
+-  execute.py: Entry point on the slurm node that runs the dispatched functions.
+-  execute_cmds.py: Building the command lines passed to slurm.
+-  function.py: The ``@slurmify`` decorator and ``SlurmFunction`` wrapper.
+-  function_call.py: Data class representing a serializable function call.
+-  function_map.py: Registry of all slurmified functions.
+-  guard.py: Safety mechanisms to prevent accidental DDoS of your slurm cluster.
+-  job_reference.py: Abstract base class for job references returned by dispatchers.
+-  node_setup.py: ``@node_setup`` decorator for pre-execution initialization.
+-  options.py: Hashable wrapper for slurm options.
+-  check.py: CLI tool to verify your slurm setup (``python -m slurminade.check``).
 
 Changes
 -------

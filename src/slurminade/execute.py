@@ -55,12 +55,14 @@ def main(root, calls, fromfile, listfuncs):
     if calls:
         function_calls = json.loads(calls)
     elif fromfile:
-        with Path(fromfile).open() as f:
-            logging.getLogger("slurminade").info(
-                f"Reading function calls from {fromfile}."
-            )
-            function_calls = json.load(f)
-        Path(fromfile).unlink()
+        try:
+            with Path(fromfile).open() as f:
+                logging.getLogger("slurminade").info(
+                    "Reading function calls from %s.", fromfile
+                )
+                function_calls = json.load(f)
+        finally:
+            Path(fromfile).unlink(missing_ok=True)
     else:
         msg = "No function calls provided."
         raise ValueError(msg)

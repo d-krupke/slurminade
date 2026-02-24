@@ -4,7 +4,7 @@ This file saves the default configuration for slurm.
 
 import json
 import logging
-import os.path
+import os
 import typing
 from pathlib import Path
 
