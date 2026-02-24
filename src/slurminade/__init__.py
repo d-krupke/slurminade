@@ -54,12 +54,17 @@ Project structure:
 - options.py: Contains a simple data structure to save slurm options.
 """
 
-# set default logging
 import logging
 import sys
 
-# Set up the root logger to print to stdout by default
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+# Configure the slurminade logger (not the root logger, to avoid interfering
+# with other libraries). Users see dispatch/batch info by default.
+_logger = logging.getLogger("slurminade")
+if not _logger.handlers:
+    _handler = logging.StreamHandler(sys.stdout)
+    _handler.setFormatter(logging.Formatter("%(levelname)s:%(name)s:%(message)s"))
+    _logger.addHandler(_handler)
+    _logger.setLevel(logging.INFO)
 
 from .bundling import Batch, JobBundling  # noqa: E402
 from .conf import set_default_configuration, update_default_configuration  # noqa: E402

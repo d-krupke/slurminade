@@ -16,10 +16,8 @@ repos:
       - id: mixed-line-ending
       - id: name-tests-test
         args: ["--pytest-test-first"]
-        exclude: "^tests/packages/"
       - id: requirements-txt-fixer
       - id: trailing-whitespace
-        exclude: "^tests"
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
@@ -27,17 +25,6 @@ repos:
       - id: rst-backticks
       - id: rst-directive-colons
       - id: rst-inline-touching-normal
-
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black-jupyter
-
-  - repo: https://github.com/asottile/blacken-docs
-    rev: 1.19.1
-    hooks:
-      - id: blacken-docs
-        additional_dependencies: [black==24.10.0]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: "v3.3.3"
@@ -73,21 +60,3 @@ repos:
     hooks:
       - id: codespell
         exclude: ^(LICENSE$)
-
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-
-  - repo: local
-    hooks:
-      - id: disallow-caps
-        name: Disallow improper capitalization
-        language: pygrep
-        entry: PyBind|Numpy|Cmake|CCache|Github|PyTest
-        exclude: .pre-commit-config.yaml
-      - id: disallow-expressions
-        name: Disallow expressions
-        language: pygrep
-        entry: tool\.cmake
-        exclude: .pre-commit-config.yaml

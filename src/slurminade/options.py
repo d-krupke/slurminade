@@ -43,10 +43,10 @@ class SlurmOptions:
             raise TypeError(msg) from e
 
     def __eq__(self, other: object) -> bool:
-        """Check equality based on hash."""
+        """Check equality based on data contents."""
         if not isinstance(other, SlurmOptions):
             return False
-        return hash(self) == hash(other)
+        return self._data == other._data
 
     def __repr__(self) -> str:
         """Return a string representation."""

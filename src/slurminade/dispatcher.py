@@ -356,29 +356,30 @@ class SubprocessDispatcher(Dispatcher):
         options: SlurmOptions,  # noqa: ARG002
         entry_point: Path,
         block: bool = False,  # noqa: ARG002
-    ) -> int:
+    ) -> SubprocessJobReference:
         dispatch_guard()
         command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
-        result = subprocess.run(command, shell=False, check=False)
-        return result.returncode
+        subprocess.run(command, shell=False, check=True)
+        return SubprocessJobReference()
 
     def srun(
         self,
         command: str,
         conf: typing.Optional[dict] = None,  # noqa: ARG002
         simple_slurm_kwargs: typing.Optional[dict] = None,  # noqa: ARG002
-    ):
+    ) -> SubprocessJobReference:
         dispatch_guard()
         logging.getLogger("slurminade").debug("SRUN %s", command)
         subprocess.run(command, check=True)
+        return SubprocessJobReference()
 
     def sbatch(
         self,
         command: str,
         conf: typing.Optional[dict] = None,  # noqa: ARG002
         simple_slurm_kwargs: typing.Optional[dict] = None,  # noqa: ARG002
-    ):
-        self.srun(command)
+    ) -> SubprocessJobReference:
+        return self.srun(command)
 
     def is_sequential(self):
         return True
@@ -472,7 +473,9 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
         "Setting dispatcher to %s", dispatcher.__class__.__name__
     )
     __dispatcher = dispatcher
-    assert dispatcher == get_dispatcher()
+    if get_dispatcher() is not dispatcher:
+        msg = "Failed to set dispatcher."
+        raise RuntimeError(msg)
 
 
 def dispatch(

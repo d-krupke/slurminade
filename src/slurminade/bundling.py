@@ -325,13 +325,15 @@ class JobBundling(Dispatcher):
             exc_val: Exception value if an exception occurred
             exc_tb: Exception traceback if an exception occurred
         """
-        if exc_type:
-            _logger.error("Exiting JobBundling context due to exception: %s", exc_type.__name__)
-            logging.getLogger("slurminade").error("Aborted due to exception.")
-            return
-        _logger.info("Exiting JobBundling context, flushing buffered tasks")
-        self.flush()
-        set_dispatcher(self.subdispatcher)
+        try:
+            if exc_type:
+                _logger.error("Exiting JobBundling context due to exception: %s", exc_type.__name__)
+                logging.getLogger("slurminade").error("Aborted due to exception.")
+                return
+            _logger.info("Exiting JobBundling context, flushing buffered tasks")
+            self.flush()
+        finally:
+            set_dispatcher(self.subdispatcher)
 
     def _log_dispatch(self, funcs: list[FunctionCall], options: SlurmOptions) -> None:
         """
