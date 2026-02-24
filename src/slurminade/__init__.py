@@ -61,10 +61,9 @@ import sys
 # Set up the root logger to print to stdout by default
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
-# flake8: noqa F401
-from .bundling import Batch, JobBundling
-from .conf import set_default_configuration, update_default_configuration
-from .dispatcher import (
+from .bundling import Batch, JobBundling  # noqa: E402
+from .conf import set_default_configuration, update_default_configuration  # noqa: E402
+from .dispatcher import (  # noqa: E402
     SlurmDispatcher,
     SubprocessDispatcher,
     TestDispatcher,
@@ -74,14 +73,16 @@ from .dispatcher import (
     set_dispatcher,
     srun,
 )
-from .function import shell, slurmify
-from .function_map import set_entry_point
-from .guard import (
+from .function import shell, slurmify  # noqa: E402
+from .function_map import set_entry_point  # noqa: E402
+from .guard import (  # noqa: E402
     allow_recursive_distribution,
     disable_warning_on_repeated_flushes,
     set_dispatch_limit,
 )
-from .node_setup import node_setup
+from .node_setup import node_setup  # noqa: E402
+
+__version__ = "1.2.0"
 
 __all__ = [
     "slurmify",

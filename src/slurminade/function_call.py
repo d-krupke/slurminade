@@ -1,4 +1,3 @@
-import typing
 
 
 class FunctionCall:
@@ -6,12 +5,12 @@ class FunctionCall:
     A function call to be dispatched.
     """
 
-    def __init__(self, func_id: str, args: typing.Tuple, kwargs: typing.Dict):
+    def __init__(self, func_id: str, args: tuple, kwargs: dict):
         self.func_id = func_id  # the function id, as in FunctionMap
         self.args = args  # the positional arguments for the call
         self.kwargs = kwargs  # the keyword arguments for the call
 
-    def to_json(self) -> typing.Dict:
+    def to_json(self) -> dict:
         """
         Convert call to a json object that can be passed to slurm.
         :return: json object.

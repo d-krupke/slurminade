@@ -15,7 +15,7 @@ class SlurmOptions:
 
     def __init__(self, **kwargs: typing.Any) -> None:
         """Initialize SlurmOptions with keyword arguments."""
-        self._data: typing.Dict[str, typing.Any] = dict(kwargs)
+        self._data: dict[str, typing.Any] = dict(kwargs)
 
     def _items(self) -> Iterator[tuple[str, typing.Any]]:
         """Iterate over items, converting nested dicts to SlurmOptions."""
@@ -52,7 +52,7 @@ class SlurmOptions:
         """Return a string representation."""
         return f"SlurmOptions({self._data!r})"
 
-    def as_dict(self) -> typing.Dict[str, typing.Any]:
+    def as_dict(self) -> dict[str, typing.Any]:
         """Convert to a regular dictionary."""
         return dict(self._items())
 
@@ -116,7 +116,7 @@ class SlurmOptions:
         """Get values view like a dict."""
         return self._data.values()
 
-    def update(self, other: typing.Dict[str, typing.Any]) -> None:
+    def update(self, other: dict[str, typing.Any]) -> None:
         """Update from another dict."""
         self._data.update(other)
 

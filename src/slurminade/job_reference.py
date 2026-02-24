@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class JobReference(abc.ABC):
@@ -21,7 +21,7 @@ class JobReference(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         pass
 
     def __repr__(self) -> str:

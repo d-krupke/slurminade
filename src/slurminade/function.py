@@ -44,7 +44,7 @@ class SlurmFunction:
 
     def __init__(
         self,
-        special_slurm_opts: typing.Dict[str, typing.Any],
+        special_slurm_opts: dict[str, typing.Any],
         func: typing.Callable[..., typing.Any],
         func_id: str,
         call_policy: CallPolicy = CallPolicy.LOCALLY,
@@ -65,7 +65,7 @@ class SlurmFunction:
         self.defining_file = Path(inspect.getfile(func))
         _logger.debug("Created SlurmFunction for %s with policy %s", func_id, call_policy)
 
-    def update_options(self, conf: typing.Dict[str, typing.Any]) -> None:
+    def update_options(self, conf: dict[str, typing.Any]) -> None:
         """
         Update Slurm options for this function.
 
@@ -123,7 +123,7 @@ class SlurmFunction:
         sfunc.update_options(kwargs)
         return sfunc
 
-    def _check(self, args: tuple[typing.Any, ...], kwargs: typing.Dict[str, typing.Any]) -> None:
+    def _check(self, args: tuple[typing.Any, ...], kwargs: dict[str, typing.Any]) -> None:
         """
         Check if the arguments match the function signature.
 
@@ -303,7 +303,7 @@ def _slurmify(
 
 
 @_slurmify(allow_overwrite=True)
-def shell(cmd: typing.Union[str, typing.List[str]]):
+def shell(cmd: typing.Union[str, list[str]]):
     """
     Execute a command.
     :param cmd: The command to be executed. Can be a string (will use shell=True)

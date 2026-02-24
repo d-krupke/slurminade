@@ -1,10 +1,9 @@
 """Tests for configuration management."""
 
-import pytest
 from slurminade.conf import (
+    _get_conf,
     set_default_configuration,
     update_default_configuration,
-    _get_conf,
 )
 
 

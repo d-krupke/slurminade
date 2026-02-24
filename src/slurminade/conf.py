@@ -13,10 +13,10 @@ CONFIG_NAME = ".slurminade_default.json"
 # Module-level logger for consistent logging
 _logger = logging.getLogger("slurminade.conf")
 
-__default_conf: typing.Dict[str, typing.Any] = {}
+__default_conf: dict[str, typing.Any] = {}
 
 
-def _load_conf(path: Path) -> typing.Dict[str, typing.Any]:
+def _load_conf(path: Path) -> dict[str, typing.Any]:
     """
     Load configuration from a JSON file.
 
@@ -44,7 +44,7 @@ def _load_conf(path: Path) -> typing.Dict[str, typing.Any]:
 
 
 def update_default_configuration(
-    conf: typing.Optional[typing.Dict[str, typing.Any]] = None, **kwargs: typing.Any
+    conf: typing.Optional[dict[str, typing.Any]] = None, **kwargs: typing.Any
 ) -> None:
     """
     Adds or updates the default configuration.
@@ -86,7 +86,7 @@ _load_default_conf()
 
 
 def set_default_configuration(
-    conf: typing.Optional[typing.Dict[str, typing.Any]] = None, **kwargs: typing.Any
+    conf: typing.Optional[dict[str, typing.Any]] = None, **kwargs: typing.Any
 ) -> None:
     """
     Replaces the default configuration.
@@ -97,15 +97,15 @@ def set_default_configuration(
         conf: A dictionary with the configuration
         **kwargs: Configuration parameters (alternative to giving a dictionary)
     """
-    global __default_conf
+    global __default_conf  # noqa: PLW0603
     _logger.info("Resetting default configuration")
     __default_conf = {}
     update_default_configuration(conf, **kwargs)
 
 
 def _get_conf(
-    conf: typing.Optional[typing.Dict[str, typing.Any]] = None
-) -> typing.Dict[str, typing.Any]:
+    conf: typing.Optional[dict[str, typing.Any]] = None
+) -> dict[str, typing.Any]:
     """
     Get merged configuration (default + override).
 

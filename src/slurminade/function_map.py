@@ -27,8 +27,8 @@ class FunctionMap:
     # The slurm node just executes the file content of a script, so the file name is lost.
     # slurminade will set this value in the beginning to reconstruct it.
     entry_point: typing.Optional[str] = None
-    _data: typing.ClassVar[typing.Dict[str, typing.Callable]] = {}
-    _ids: typing.ClassVar[Optional[typing.Set[str]]] = set()
+    _data: typing.ClassVar[dict[str, typing.Callable]] = {}
+    _ids: typing.ClassVar[Optional[set[str]]] = set()
 
     @staticmethod
     def get_id(func: typing.Callable) -> str:
@@ -100,7 +100,7 @@ class FunctionMap:
 
     @staticmethod
     def call(
-        func_id: str, args: typing.Iterable, kwargs: typing.Dict[str, typing.Any]
+        func_id: str, args: typing.Iterable, kwargs: dict[str, typing.Any]
     ) -> typing.Any:
         """
         Calls a function by its id.
@@ -139,7 +139,7 @@ class FunctionMap:
         return func_id in FunctionMap._ids
 
     @staticmethod
-    def get_all_ids() -> typing.List[str]:
+    def get_all_ids() -> list[str]:
         return list(FunctionMap._data.keys())
 
 

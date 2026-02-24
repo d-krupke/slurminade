@@ -51,7 +51,7 @@ class BundlingJobReference(JobReference):
         """
         return None
 
-    def get_info(self) -> typing.Dict[str, typing.Any]:
+    def get_info(self) -> dict[str, typing.Any]:
         """
         Get job information (always empty for bundled tasks).
 
@@ -69,8 +69,8 @@ class TaskBuffer:
 
     def __init__(self) -> None:
         """Initialize an empty task buffer."""
-        self._tasks: typing.Dict[
-            typing.Tuple[Path, SlurmOptions], typing.List[FunctionCall]
+        self._tasks: dict[
+            tuple[Path, SlurmOptions], list[FunctionCall]
         ] = defaultdict(list)
         _logger.debug("Created TaskBuffer")
 
@@ -95,7 +95,7 @@ class TaskBuffer:
 
     def items(
         self,
-    ) -> typing.Iterator[typing.Tuple[Path, SlurmOptions, typing.List[FunctionCall]]]:
+    ) -> typing.Iterator[tuple[Path, SlurmOptions, list[FunctionCall]]]:
         """
         Iterate over buffered tasks grouped by options.
 
@@ -141,14 +141,14 @@ class JobBundling(Dispatcher):
         self.max_size = max_size
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
-        self._all_job_refs: typing.List[JobReference] = []
+        self._all_job_refs: list[JobReference] = []
         _logger.info(
             "Created JobBundling with max_size=%d, dispatcher=%s",
             max_size,
             self.subdispatcher.__class__.__name__,
         )
 
-    def flush(self) -> typing.List[JobReference]:
+    def flush(self) -> list[JobReference]:
         """
         Distribute all buffered tasks. Return the jobs used.
 
@@ -160,7 +160,7 @@ class JobBundling(Dispatcher):
             A list of job references for the dispatched jobs
         """
         _logger.info("Flushing JobBundling buffer")
-        job_refs: typing.List[JobReference] = []
+        job_refs: list[JobReference] = []
         total_tasks = 0
 
         for entry_point, opt, tasks_ in self._tasks.items():
@@ -189,7 +189,7 @@ class JobBundling(Dispatcher):
         )
         return job_refs
 
-    def get_all_job_ids(self) -> typing.List[int]:
+    def get_all_job_ids(self) -> list[int]:
         """
         Return all job ids that have been used.
 
@@ -201,7 +201,7 @@ class JobBundling(Dispatcher):
         _logger.debug("Retrieved %d job IDs from %d job refs", len(filtered_ids), len(self._all_job_refs))
         return filtered_ids
 
-    def get_all_jobs(self) -> typing.List[JobReference]:
+    def get_all_jobs(self) -> list[JobReference]:
         """
         Return all job references that have been created.
 
@@ -260,8 +260,8 @@ class JobBundling(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict[str, typing.Any]] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        conf: typing.Optional[dict[str, typing.Any]] = None,
+        simple_slurm_kwargs: typing.Optional[dict[str, typing.Any]] = None,
     ) -> JobReference:
         """
         Execute command with srun (bypasses bundling).
@@ -281,8 +281,8 @@ class JobBundling(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: typing.Optional[typing.Dict[str, typing.Any]] = None,
-        simple_slurm_kwargs: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        conf: typing.Optional[dict[str, typing.Any]] = None,
+        simple_slurm_kwargs: typing.Optional[dict[str, typing.Any]] = None,
     ) -> JobReference:
         """
         Execute command with sbatch (bypasses bundling).
@@ -313,7 +313,7 @@ class JobBundling(Dispatcher):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]],
+        exc_type: typing.Optional[type[BaseException]],
         exc_val: typing.Optional[BaseException],
         exc_tb: typing.Optional[typing.Any],
     ) -> None:
@@ -333,7 +333,7 @@ class JobBundling(Dispatcher):
         self.flush()
         set_dispatcher(self.subdispatcher)
 
-    def _log_dispatch(self, funcs: typing.List[FunctionCall], options: SlurmOptions) -> None:
+    def _log_dispatch(self, funcs: list[FunctionCall], options: SlurmOptions) -> None:
         """
         Log information about tasks being added to the batch.
 

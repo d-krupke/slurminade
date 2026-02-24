@@ -17,7 +17,7 @@ from .function_call import FunctionCall
 
 def create_slurminade_command(
     entry_point: Path, funcs: typing.Iterable[FunctionCall], max_arg_length: int
-) -> typing.List[str]:
+) -> list[str]:
     """
     Creates a terminal command that calls the Python module `slurminade.execute` with the
     provided function calls as an argument. If the total length of the function calls
@@ -53,7 +53,7 @@ def create_slurminade_command(
     return command
 
 
-def call_slurminade_to_get_function_ids(entry_point: Path) -> typing.Set[str]:
+def call_slurminade_to_get_function_ids(entry_point: Path) -> set[str]:
     cmd = [
         sys.executable,
         "-m",

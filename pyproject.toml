@@ -1,18 +1,13 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel", "Cython"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools_scm]
-write_to = "src/slurminade/_version.py"
-version_scheme = "post-release"
-local_scheme = "no-local-version"
-
 [project]
 name = "slurminade"
-dynamic = ["version"]
+version = "1.2.0"
 authors = [
     { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
 ]
@@ -86,6 +81,11 @@ directory = "htmlcov"
 
 
 [tool.ruff]
+target-version = "py39"
+src = ["src"]
+exclude = ["src/slurminade/_version.py"]
+
+[tool.ruff.lint]
 select = [
     "E", "F", "W", # flake8
     "B",  "B904",  # flake8-bugbear
@@ -115,10 +115,7 @@ extend-ignore = [
     "PT004",   # Incorrect, just usefixtures instead.
     "RUF009",  # Too easy to get a false positive
 ]
-target-version = "py39"
-src = ["src"]
 unfixable = ["T20", "F841"]
-exclude = []
 
 
 [tool.mypy]
