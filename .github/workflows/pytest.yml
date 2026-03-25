@@ -22,6 +22,7 @@ jobs:
           ruff check src tests
       - name: Type check with ty
         run: |
+          pip install pytest
           pip install -e .
           ty check src tests
 
