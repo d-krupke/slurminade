@@ -361,6 +361,7 @@ The project is reasonably easy:
 Changes
 -------
 
+- 1.1.3: Forward Python optimization flags (``-O``/``-OO``) to SLURM workers, so ``__debug__`` and assertions behave consistently. (Issue #26)
 - 1.1.2: Fixing some return types for job bundling. Still not perfect. Be aware of potentially breaking changes if you have been using the job ids.
 - 1.1.1: Fixing bug when there is some output to stdout when loading the code, such as deprecation warnings.
 - 1.1.0: Slurminade can now be called from iPython, too! `exec` has been renamed `shell` to prevent confusion with the Python call `exec` which will evaluate a string as Python code.

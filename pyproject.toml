@@ -112,10 +112,17 @@ extend-ignore = [
     "PLR",     # Design rules for pylint
     "PLE1205", # Format check doesn't work with our custom logger
     "E501",    # Line too long
-    "PT004",   # Incorrect, just usefixtures instead.
     "RUF009",  # Too easy to get a false positive
 ]
 unfixable = ["T20", "F841"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/slurminade/__init__.py" = ["E402", "F401", "RUF022"]
+"src/slurminade/check.py" = ["T201", "PLC0415"]
+"src/slurminade/function_map.py" = ["PLC0415"]
+"examples/*" = ["T201", "PTH123"]
+"docs/*" = ["PTH100"]
+"tests/*" = ["T201"]
 
 
 [tool.mypy]

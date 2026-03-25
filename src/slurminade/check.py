@@ -1,4 +1,3 @@
-# ruff: noqa: T201
 import socket
 import tempfile
 import time

@@ -27,7 +27,6 @@ def on_slurm_node() -> bool:
     Returns:
         True if on a Slurm node, False otherwise
     """
-    global _exec_flag  # noqa: PLW0602
     return _exec_flag
 
 

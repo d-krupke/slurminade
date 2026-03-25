@@ -66,9 +66,9 @@ if not _logger.handlers:
     _logger.addHandler(_handler)
     _logger.setLevel(logging.INFO)
 
-from .bundling import Batch, JobBundling  # noqa: E402
-from .conf import set_default_configuration, update_default_configuration  # noqa: E402
-from .dispatcher import (  # noqa: E402
+from .bundling import Batch, JobBundling
+from .conf import set_default_configuration, update_default_configuration
+from .dispatcher import (
     SlurmDispatcher,
     SubprocessDispatcher,
     TestDispatcher,
@@ -78,14 +78,14 @@ from .dispatcher import (  # noqa: E402
     set_dispatcher,
     srun,
 )
-from .function import shell, slurmify  # noqa: E402
-from .function_map import set_entry_point  # noqa: E402
-from .guard import (  # noqa: E402
+from .function import shell, slurmify
+from .function_map import set_entry_point
+from .guard import (
     allow_recursive_distribution,
     disable_warning_on_repeated_flushes,
     set_dispatch_limit,
 )
-from .node_setup import node_setup  # noqa: E402
+from .node_setup import node_setup
 
 __version__ = "1.2.0"
 

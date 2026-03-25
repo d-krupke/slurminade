@@ -31,7 +31,8 @@ def create_slurminade_command(
         msg = f"Entry point {entry_point} does not exist."
         raise FileNotFoundError(msg)
 
-    command = [sys.executable, "-m", "slurminade.execute", "--root", str(entry_point)]
+    opt_flags = ["-O"] if sys.flags.optimize == 1 else ["-OO"] if sys.flags.optimize >= 2 else []
+    command = [sys.executable, *opt_flags, "-m", "slurminade.execute", "--root", str(entry_point)]
 
     # Serialize function calls as JSON
     json_calls = json.dumps([f.to_json() for f in funcs])
@@ -56,6 +57,7 @@ def create_slurminade_command(
 def call_slurminade_to_get_function_ids(entry_point: Path) -> set[str]:
     cmd = [
         sys.executable,
+        *(["-O"] if sys.flags.optimize == 1 else ["-OO"] if sys.flags.optimize >= 2 else []),
         "-m",
         "slurminade.execute",
         "--root",
