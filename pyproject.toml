@@ -83,7 +83,6 @@ directory = "htmlcov"
 [tool.ruff]
 target-version = "py39"
 src = ["src"]
-exclude = ["src/slurminade/_version.py"]
 
 [tool.ruff.lint]
 select = [
@@ -136,33 +135,5 @@ strict = true
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = ["algbench.*"]
-disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = ["numpy", "pathspec", "setuptools_scm", "hatch_fancy_pypi_readme"]
+module = ["simple_slurm"]
 ignore_missing_imports = true
-
-
-[tool.pylint]
-py-version = "3.9"
-jobs = "0"
-reports.output-format = "colorized"
-similarities.ignore-imports = "yes"
-good-names = ["f"]
-messages_control.disable = [
-    "design",
-    "fixme",
-    "import-outside-toplevel",
-    "invalid-name",
-    "line-too-long",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "missing-function-docstring",
-    "missing-module-docstring",
-    "wrong-import-position",
-    "unnecessary-ellipsis",  # Conflicts with Protocols
-    "broad-except",
-    "unused-argument",  # Handled by Ruff
-    "redefined-builtin",  # ExceptionGroup is a builtin
-]

@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 .idea
 examples/slurminade_example.txt
+src/slurminade/_version.py
 
 
