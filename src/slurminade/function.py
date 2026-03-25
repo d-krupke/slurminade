@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import subprocess
-import typing
+from collections.abc import Callable, Iterable
 from enum import Enum
 from pathlib import Path
+from typing import Any, overload
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap, get_entry_point
 from .guard import guard_recursive_distribution
 from .job_reference import JobReference
 from .options import SlurmOptions
+
+# Module-level logger for consistent logging
+_logger = logging.getLogger("slurminade.function")
 
 
 class CallPolicy(Enum):
@@ -41,25 +47,42 @@ class SlurmFunction:
 
     def __init__(
         self,
-        special_slurm_opts: typing.Dict,
-        func: typing.Callable,
+        special_slurm_opts: SlurmOptions | dict[str, Any],
+        func: Callable[..., Any],
         func_id: str,
         call_policy: CallPolicy = CallPolicy.LOCALLY,
-    ):
-        self.special_slurm_opts = SlurmOptions(**special_slurm_opts)
+    ) -> None:
+        """
+        Initialize a SlurmFunction wrapper.
+
+        Args:
+            special_slurm_opts: Slurm options specific to this function
+            func: The callable to wrap
+            func_id: Unique identifier for this function
+            call_policy: How to call this function (locally, distributed, etc.)
+        """
+        self.special_slurm_opts = special_slurm_opts if isinstance(special_slurm_opts, SlurmOptions) else SlurmOptions(**special_slurm_opts)
         self.func = func
         self.func_id = func_id
         self.call_policy = call_policy
         self.defining_file = Path(inspect.getfile(func))
+        _logger.debug("Created SlurmFunction for %s with policy %s", func_id, call_policy)
 
-    def update_options(self, conf: typing.Dict[str, typing.Any]):
+    def update_options(self, conf: dict[str, Any]) -> None:
+        """
+        Update Slurm options for this function.
+
+        Args:
+            conf: Dictionary of options to update
+        """
+        _logger.debug("Updating options for %s: %s", self.func_id, conf)
         self.special_slurm_opts.update(conf)
 
     def wait_for(
         self,
-        job_ids: typing.Union[JobReference, typing.Iterable[JobReference]],
+        job_ids: JobReference | Iterable[JobReference],
         method: str = "afterany",
-    ) -> "SlurmFunction":
+    ) -> SlurmFunction:
         """
         Add a dependency to a distribution.
         `f_jid = f.wait_for(job_ids).distribute("hello")`
@@ -88,12 +111,13 @@ class SlurmFunction:
         ):
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(msg)
+        resolved_ids = [jid.get_job_id() for jid in job_ids]
         sfunc.special_slurm_opts.add_dependencies(
-            [jid.get_job_id() for jid in job_ids], method
+            [x for x in resolved_ids if x is not None], method
         )
         return sfunc
 
-    def with_options(self, **kwargs) -> "SlurmFunction":
+    def with_options(self, **kwargs: Any) -> SlurmFunction:
         """
         Add slurm options to the function.
         :param kwargs: The slurm options.
@@ -103,19 +127,31 @@ class SlurmFunction:
         sfunc.update_options(kwargs)
         return sfunc
 
-    def _check(self, args, kwargs):
+    def _check(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
         """
         Check if the arguments match the function signature.
+
+        Args:
+            args: Positional arguments
+            kwargs: Keyword arguments
+
+        Raises:
+            TypeError: If arguments don't match function signature
         """
         inspect.signature(self.func).bind(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """
         Direct call of the original function.
-        :param args: Positional arguments.
-        :param kwargs: Keyword arguments.
-        :return: The return value of the function.
+
+        Args:
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            The return value of the function (depends on call policy)
         """
+        _logger.debug("Calling %s with policy %s", self.func_id, self.call_policy)
         if self.call_policy == CallPolicy.LOCALLY:
             return self.run_locally(*args, **kwargs)
         if self.call_policy == CallPolicy.DISTRIBUTED:
@@ -133,20 +169,27 @@ class SlurmFunction:
         try:
             return get_entry_point()
         except FileNotFoundError:
-            logging.getLogger("slurminade").debug(
-                "Using defining file %s as entry point.", self.defining_file
+            _logger.debug(
+                "Using defining file %s as entry point for %s",
+                self.defining_file,
+                self.func_id
             )
             return self.defining_file
 
-    def distribute(self, *args, **kwargs) -> JobReference:
+    def distribute(self, *args: Any, **kwargs: Any) -> JobReference:
         """
         Try to distribute function call. If slurm is not available, a direct function
         call will be performed.
-        `f.distribute("hello")`
-        Call with function arguments.
-        :return: Job id. Not necessarily valid (usually -1 in this case).
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            Job reference (may be invalid if not using Slurm)
         """
         self._check(args, kwargs)
+        _logger.info("Distributing %s with %d args", self.func_id, len(args))
         guard_recursive_distribution()
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
@@ -155,14 +198,19 @@ class SlurmFunction:
             block=False,
         )
 
-    def distribute_and_wait(self, *args, **kwargs) -> JobReference:
+    def distribute_and_wait(self, *args: Any, **kwargs: Any) -> JobReference:
         """
         Distribute the function and wait for it to finish.
-        :param args: The positional arguments.
-        :param kwargs: The keyword arguments.
-        :return: The job id.
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            Job reference
         """
         self._check(args, kwargs)
+        _logger.info("Distributing %s (blocking) with %d args", self.func_id, len(args))
         guard_recursive_distribution()
         return dispatch(
             [FunctionCall(self.func_id, args, kwargs)],
@@ -171,26 +219,48 @@ class SlurmFunction:
             block=True,
         )
 
-    def run_locally(self, *args, **kwargs):
+    def run_locally(self, *args: Any, **kwargs: Any) -> Any:
         """
-        Call the function locally.
-        `f.local("hello")`
-        Call with function arguments.
-        :return: The return value of the function.
+        Call the function locally (not distributed).
+
+        Args:
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            The return value of the function
         """
+        _logger.debug("Running %s locally with %d args", self.func_id, len(args))
         return self.func(*args, **kwargs)
 
     def __str__(self) -> str:
-        return self.func.__name__
+        return getattr(self.func, "__name__", repr(self.func))
 
     @staticmethod
-    def call(func_id, *args, **kwargs):
+    def call(func_id: str, *args: Any, **kwargs: Any) -> Any:
+        """
+        Call a slurmified function by its ID.
+
+        Args:
+            func_id: The function identifier
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            The return value of the function
+        """
         return FunctionMap.call(func_id, args, kwargs)
 
 
+@overload
+def slurmify(f: Callable[..., Any], /) -> SlurmFunction: ...
+
+@overload
+def slurmify(f: None = None, /, **args: Any) -> Callable[[Callable[..., Any]], SlurmFunction]: ...
+
 def slurmify(
-    f=None, **args
-) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+    f: Callable[..., Any] | None = None, /, **args: Any,
+) -> Callable[[Callable[..., Any]], SlurmFunction] | SlurmFunction:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -210,7 +280,7 @@ def slurmify(
         func_id = FunctionMap.register(f)
         return SlurmFunction({}, f, func_id)
 
-    def dec(func) -> SlurmFunction:
+    def dec(func: Callable[..., Any]) -> SlurmFunction:
         func_id = FunctionMap.register(func)
         return SlurmFunction(args, func, func_id)
 
@@ -218,8 +288,8 @@ def slurmify(
 
 
 def _slurmify(
-    allow_overwrite: bool, **args
-) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+    allow_overwrite: bool, **args: Any,
+) -> Callable[[Callable[..., Any]], SlurmFunction]:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -235,7 +305,7 @@ def _slurmify(
     :return: A decorated function, callable with slurm.
     """
 
-    def dec(func) -> SlurmFunction:
+    def dec(func: Callable[..., Any]) -> SlurmFunction:
         func_id = FunctionMap.register(func, allow_overwrite=allow_overwrite)
         return SlurmFunction(args, func, func_id)
 
@@ -243,9 +313,15 @@ def _slurmify(
 
 
 @_slurmify(allow_overwrite=True)
-def shell(cmd: typing.Union[str, typing.List[str]]):
+def shell(cmd: str | list[str]) -> None:
     """
     Execute a command.
-    :param cmd: The command to be executed.
+    :param cmd: The command to be executed. Can be a string (will use shell=True)
+               or a list of arguments (will use shell=False for better security).
     """
-    subprocess.run(cmd, check=True, shell=True)
+    if isinstance(cmd, str):
+        # String commands require shell=True to handle pipes, redirects, etc.
+        subprocess.run(cmd, check=True, shell=True)
+    else:
+        # List of arguments is safer - no shell needed
+        subprocess.run(cmd, check=True, shell=False)

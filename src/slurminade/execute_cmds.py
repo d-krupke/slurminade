@@ -2,32 +2,24 @@
 The commands that can be understood by execute.py
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
 import shlex
 import subprocess
 import sys
-import typing
+from collections.abc import Iterable
 from pathlib import Path
 from tempfile import mkstemp
 
 from .function_call import FunctionCall
 
 
-def _python_cmd() -> str:
-    """Return the Python executable with optimization flags matching the current process."""
-    opt = sys.flags.optimize
-    if opt == 1:
-        return f"{sys.executable} -O"
-    if opt >= 2:
-        return f"{sys.executable} -OO"
-    return sys.executable
-
-
 def create_slurminade_command(
-    entry_point: Path, funcs: typing.Iterable[FunctionCall], max_arg_length: int
-) -> str:
+    entry_point: Path, funcs: Iterable[FunctionCall], max_arg_length: int
+) -> list[str]:
     """
     Creates a terminal command that calls the Python module `slurminade.execute` with the
     provided function calls as an argument. If the total length of the function calls
@@ -35,35 +27,36 @@ def create_slurminade_command(
     created to pass the function calls instead.
     :param funcs: The function calls to be dispatched.
     :param max_arg_length: The maximum allowed length of a command line argument.
-    :returns: A string representing the command to be executed in the terminal.
+    :returns: A list of command arguments to be executed (safer than shell string).
     """
     if not entry_point.exists():
         msg = f"Entry point {entry_point} does not exist."
         raise FileNotFoundError(msg)
 
-    command = (
-        f"{_python_cmd()} -m slurminade.execute --root {shlex.quote(str(entry_point))}"
-    )
+    opt_flags = ["-O"] if sys.flags.optimize == 1 else ["-OO"] if sys.flags.optimize >= 2 else []
+    command = [sys.executable, *opt_flags, "-m", "slurminade.execute", "--root", str(entry_point)]
 
     # Serialize function calls as JSON
     json_calls = json.dumps([f.to_json() for f in funcs])
-    serialized_calls = shlex.quote(json_calls)
 
-    if len(serialized_calls) > max_arg_length:
+    # Note: We quote for length estimation, but won't use quoted version in list
+    serialized_calls_quoted = shlex.quote(json_calls)
+
+    if len(serialized_calls_quoted) > max_arg_length:
         # The argument is too long, create temporary file for the JSON
         fd, filename = mkstemp(prefix="slurminade_", suffix=".json", text=True, dir=".")
         logging.getLogger("slurminade").info(
-            f"Long function calls. Serializing function calls to temporary file {filename}"
+            "Long function calls. Serializing function calls to temporary file %s", filename
         )
         with os.fdopen(fd, "w") as f:
             f.write(json_calls)
-        command += f" --fromfile {filename}"
+        command.extend(["--fromfile", filename])
     else:
-        command += f" --calls {serialized_calls}"
+        command.extend(["--calls", json_calls])
     return command
 
 
-def call_slurminade_to_get_function_ids(entry_point: Path) -> typing.Set[str]:
+def call_slurminade_to_get_function_ids(entry_point: Path) -> set[str]:
     cmd = [
         sys.executable,
         *(["-O"] if sys.flags.optimize == 1 else ["-OO"] if sys.flags.optimize >= 2 else []),

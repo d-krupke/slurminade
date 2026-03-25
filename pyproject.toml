@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel", "Cython"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -7,22 +7,35 @@ where = ["src"]
 
 [project]
 name = "slurminade"
-version = "1.1.2"
+version = "1.2.0"
 authors = [
     { name = "TU Braunschweig, IBR, Algorithms Group (Dominik Krupke)", email = "krupke@ibr.cs.tu-bs.de" },
 ]
 description = "A decorator-based slurm runner."
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
 ]
-keywords=["slurm"]
+keywords=["slurm", "hpc", "batch", "cluster", "distributed"]
 dependencies = [
     "simple_slurm>=0.2.6",
     "click",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ty>=0.0.1",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0",
 ]
 
 [project.urls]
@@ -39,8 +52,35 @@ log_cli_level = "info"
 testpaths = ["tests"]
 
 
+[tool.coverage.run]
+source = ["src"]
+branch = true
+parallel = true
+omit = [
+    "tests/*",
+    "**/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 src = ["src"]
 
 [tool.ruff.lint]
@@ -76,7 +116,6 @@ unfixable = ["T20", "F841"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/slurminade/__init__.py" = ["E402", "F401", "RUF022"]
-"src/slurminade/_version.py" = ["I001", "RUF022"]
 "src/slurminade/check.py" = ["T201", "PLC0415"]
 "src/slurminade/function_map.py" = ["PLC0415"]
 "examples/*" = ["T201", "PTH123"]
@@ -87,7 +126,7 @@ unfixable = ["T20", "F841"]
 [tool.mypy]
 files = ["src", "tests"]
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/src"]
-python_version = "3.8"
+python_version = "3.9"
 warn_unused_configs = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
@@ -95,33 +134,5 @@ strict = true
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = ["algbench.*"]
-disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = ["numpy", "pathspec", "setuptools_scm", "hatch_fancy_pypi_readme"]
+module = ["simple_slurm"]
 ignore_missing_imports = true
-
-
-[tool.pylint]
-py-version = "3.8"
-jobs = "0"
-reports.output-format = "colorized"
-similarities.ignore-imports = "yes"
-good-names = ["f"]
-messages_control.disable = [
-    "design",
-    "fixme",
-    "import-outside-toplevel",
-    "invalid-name",
-    "line-too-long",
-    "missing-class-docstring",
-    "missing-function-docstring",
-    "missing-function-docstring",
-    "missing-module-docstring",
-    "wrong-import-position",
-    "unnecessary-ellipsis",  # Conflicts with Protocols
-    "broad-except",
-    "unused-argument",  # Handled by Ruff
-    "redefined-builtin",  # ExceptionGroup is a builtin
-]

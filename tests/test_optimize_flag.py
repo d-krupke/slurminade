@@ -23,7 +23,7 @@ def _make_dummy_entry(tmp_path: Path) -> Path:
 class TestCreateCommandOptimizeFlag:
     """Unit tests: create_slurminade_command includes -O/-OO when appropriate."""
 
-    def _build_command(self, tmp_path: Path, optimize: int) -> str:
+    def _build_command(self, tmp_path: Path, optimize: int) -> list[str]:
         entry = _make_dummy_entry(tmp_path)
         func = FunctionCall("mod.func", (), {})
         with patch("sys.flags") as mock_flags:
@@ -33,16 +33,22 @@ class TestCreateCommandOptimizeFlag:
     def test_no_flag_when_optimize_0(self, tmp_path):
         cmd = self._build_command(tmp_path, 0)
         # Should NOT contain -O or -OO between executable and -m
-        exe_to_m = cmd.split("-m")[0]
-        assert " -O" not in exe_to_m
+        m_index = cmd.index("-m")
+        flags_before_m = cmd[1:m_index]
+        assert "-O" not in flags_before_m
+        assert "-OO" not in flags_before_m
 
     def test_single_O_when_optimize_1(self, tmp_path):
         cmd = self._build_command(tmp_path, 1)
-        assert f"{sys.executable} -O -m" in cmd
+        assert cmd[0] == sys.executable
+        m_index = cmd.index("-m")
+        assert "-O" in cmd[1:m_index]
 
     def test_double_O_when_optimize_2(self, tmp_path):
         cmd = self._build_command(tmp_path, 2)
-        assert f"{sys.executable} -OO -m" in cmd
+        assert cmd[0] == sys.executable
+        m_index = cmd.index("-m")
+        assert "-OO" in cmd[1:m_index]
 
 
 class TestOptimizeFlagIntegration:
