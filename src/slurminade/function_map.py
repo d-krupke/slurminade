@@ -49,7 +49,7 @@ class FunctionMap:
 
     @staticmethod
     def get_readable_name(func_id: str) -> str:
-        return func_id.split(":")[-1]
+        return func_id.rsplit(":", maxsplit=1)[-1]
 
     @staticmethod
     def check_compatibility(func: typing.Callable):
