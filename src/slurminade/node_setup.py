@@ -2,9 +2,11 @@
 Node setup functionality for executing initialization code on Slurm nodes.
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
-import typing
+from collections.abc import Callable
 
 from .guard import on_slurm_node
 
@@ -25,7 +27,7 @@ def disable_setup() -> None:
     _no_setup = True
 
 
-def node_setup(func: typing.Callable[[], None]) -> typing.Callable[[], None]:
+def node_setup(func: Callable[[], None]) -> Callable[[], None]:
     """
     Decorator: Call this function on the node before running any function calls.
 

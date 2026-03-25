@@ -3,12 +3,13 @@ The internal datastructure to save all the slurmified functions.
 Not relevant for endusers.
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
-import pathlib
-import typing
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Any, ClassVar
 
 from .execute_cmds import call_slurminade_to_get_function_ids
 
@@ -26,12 +27,12 @@ class FunctionMap:
     # Needed to save the entry point at the slurm node.
     # The slurm node just executes the file content of a script, so the file name is lost.
     # slurminade will set this value in the beginning to reconstruct it.
-    entry_point: typing.Optional[str] = None
-    _data: typing.ClassVar[dict[str, typing.Callable]] = {}
-    _ids: typing.ClassVar[Optional[set[str]]] = set()
+    entry_point: str | None = None
+    _data: ClassVar[dict[str, Callable]] = {}
+    _ids: ClassVar[set[str] | None] = set()
 
     @staticmethod
-    def get_id(func: typing.Callable) -> str:
+    def get_id(func: Callable) -> str:
         """
         Returns the unique id of a function. Necessary to slurmify it.
         Probably not needed by the enduser.
@@ -55,7 +56,7 @@ class FunctionMap:
         return func_id.rsplit(":", maxsplit=1)[-1]
 
     @staticmethod
-    def check_compatibility(func: typing.Callable):
+    def check_compatibility(func: Callable) -> None:
         """
         Throw if the function cannot be assigned an id.
         :param func: The function to be checked.
@@ -70,7 +71,7 @@ class FunctionMap:
             raise ValueError(msg)
 
     @staticmethod
-    def register(func: typing.Callable[..., typing.Any], allow_overwrite: bool = False) -> str:
+    def register(func: Callable[..., Any], allow_overwrite: bool = False) -> str:
         """
         Register a function, allowing it to be called just by its id.
 
@@ -100,8 +101,8 @@ class FunctionMap:
 
     @staticmethod
     def call(
-        func_id: str, args: typing.Iterable, kwargs: dict[str, typing.Any]
-    ) -> typing.Any:
+        func_id: str, args: Iterable, kwargs: dict[str, Any]
+    ) -> Any:
         """
         Calls a function by its id.
         :param func_id: The id of the function to be called.
@@ -143,7 +144,7 @@ class FunctionMap:
         return list(FunctionMap._data.keys())
 
 
-def set_entry_point(entry_point: typing.Union[str, pathlib.Path]) -> None:
+def set_entry_point(entry_point: str | Path) -> None:
     """
     This function usually is not necessary for endusers.
     Set a manual entry point. This can allow you to use slurmify from the interactive

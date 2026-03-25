@@ -1,7 +1,9 @@
 """Options for Slurm jobs."""
 
-import typing
-from collections.abc import Iterator
+from __future__ import annotations
+
+from collections.abc import Iterable, Iterator
+from typing import Any
 
 
 class SlurmOptions:
@@ -13,11 +15,11 @@ class SlurmOptions:
     better type safety.
     """
 
-    def __init__(self, **kwargs: typing.Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize SlurmOptions with keyword arguments."""
-        self._data: dict[str, typing.Any] = dict(kwargs)
+        self._data: dict[str, Any] = dict(kwargs)
 
-    def _items(self) -> Iterator[tuple[str, typing.Any]]:
+    def _items(self) -> Iterator[tuple[str, Any]]:
         """Iterate over items, converting nested dicts to SlurmOptions."""
         for k, v in self._data.items():
             if isinstance(v, dict):
@@ -52,12 +54,12 @@ class SlurmOptions:
         """Return a string representation."""
         return f"SlurmOptions({self._data!r})"
 
-    def as_dict(self) -> dict[str, typing.Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Convert to a regular dictionary."""
         return dict(self._items())
 
     def add_dependencies(
-        self, job_ids: typing.Iterable[typing.Union[str, int]], method: str = "afterany"
+        self, job_ids: Iterable[str | int], method: str = "afterany"
     ) -> None:
         """
         Add job dependencies to these options.
@@ -88,11 +90,11 @@ class SlurmOptions:
             self._data["dependency"] = opt
 
     # Dict-like interface for backwards compatibility
-    def __getitem__(self, key: str) -> typing.Any:
+    def __getitem__(self, key: str) -> Any:
         """Get an item like a dict."""
         return self._data[key]
 
-    def __setitem__(self, key: str, value: typing.Any) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """Set an item like a dict."""
         self._data[key] = value
 
@@ -100,26 +102,26 @@ class SlurmOptions:
         """Check if key exists like a dict."""
         return key in self._data
 
-    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+    def get(self, key: str, default: Any = None) -> Any:
         """Get an item with a default value like a dict."""
         return self._data.get(key, default)
 
-    def items(self) -> typing.ItemsView[str, typing.Any]:
+    def items(self) -> Any:
         """Get items view like a dict."""
         return self._data.items()
 
-    def keys(self) -> typing.KeysView[str]:
+    def keys(self) -> Any:
         """Get keys view like a dict."""
         return self._data.keys()
 
-    def values(self) -> typing.ValuesView[typing.Any]:
+    def values(self) -> Any:
         """Get values view like a dict."""
         return self._data.values()
 
-    def update(self, other: dict[str, typing.Any]) -> None:
+    def update(self, other: dict[str, Any]) -> None:
         """Update from another dict."""
         self._data.update(other)
 
-    def copy(self) -> "SlurmOptions":
+    def copy(self) -> SlurmOptions:
         """Create a shallow copy."""
         return SlurmOptions(**self._data.copy())

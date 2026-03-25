@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import abc
-from typing import Any, Optional
+from typing import Any
 
 
 class JobReference(abc.ABC):
@@ -13,11 +15,11 @@ class JobReference(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_job_id(self) -> Optional[int]:
+    def get_job_id(self) -> int | None:
         pass
 
     @abc.abstractmethod
-    def get_exit_code(self) -> Optional[int]:
+    def get_exit_code(self) -> int | None:
         pass
 
     @abc.abstractmethod

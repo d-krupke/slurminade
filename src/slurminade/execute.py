@@ -3,6 +3,8 @@ This module provides the starting point for the slurm node. You do not have to c
 anything of this file yourself.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
@@ -36,7 +38,7 @@ from .node_setup import disable_setup
     is_flag=True,
     required=False,
 )
-def main(root, calls, fromfile, listfuncs):
+def main(root: str, calls: str | None, fromfile: str | None, listfuncs: bool) -> None:
     prevent_distribution()  # make sure, the code on the node does not distribute itself.
     if listfuncs:
         disable_setup()

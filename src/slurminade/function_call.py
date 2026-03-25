@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any
 
 
 class FunctionCall:
@@ -5,12 +8,12 @@ class FunctionCall:
     A function call to be dispatched.
     """
 
-    def __init__(self, func_id: str, args: tuple, kwargs: dict):
+    def __init__(self, func_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
         self.func_id = func_id  # the function id, as in FunctionMap
         self.args = args  # the positional arguments for the call
         self.kwargs = kwargs  # the keyword arguments for the call
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """
         Convert call to a json object that can be passed to slurm.
         :return: json object.
@@ -22,7 +25,7 @@ class FunctionCall:
         Return a printable string representation of the call, useful for logging.
         """
 
-        def arg_to_str(arg):
+        def arg_to_str(arg: object) -> str:
             if isinstance(arg, str):
                 return f"'{arg}'"
             return str(arg)

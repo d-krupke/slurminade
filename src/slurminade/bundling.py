@@ -2,10 +2,13 @@
 Contains code for bundling function calls together.
 """
 
+from __future__ import annotations
+
 import logging
-import typing
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
 from pathlib import Path
+from typing import Any
 
 from .dispatcher import (
     Dispatcher,
@@ -33,7 +36,7 @@ class BundlingJobReference(JobReference):
         """Initialize a placeholder job reference."""
         super().__init__()
 
-    def get_job_id(self) -> typing.Optional[int]:
+    def get_job_id(self) -> int | None:
         """
         Get the job ID (always None for bundled tasks).
 
@@ -42,7 +45,7 @@ class BundlingJobReference(JobReference):
         """
         return None
 
-    def get_exit_code(self) -> typing.Optional[int]:
+    def get_exit_code(self) -> int | None:
         """
         Get the exit code (always None for bundled tasks).
 
@@ -51,7 +54,7 @@ class BundlingJobReference(JobReference):
         """
         return None
 
-    def get_info(self) -> dict[str, typing.Any]:
+    def get_info(self) -> dict[str, Any]:
         """
         Get job information (always empty for bundled tasks).
 
@@ -95,7 +98,7 @@ class TaskBuffer:
 
     def items(
         self,
-    ) -> typing.Iterator[tuple[Path, SlurmOptions, list[FunctionCall]]]:
+    ) -> Iterator[tuple[Path, SlurmOptions, list[FunctionCall]]]:
         """
         Iterate over buffered tasks grouped by options.
 
@@ -211,7 +214,7 @@ class JobBundling(Dispatcher):
         _logger.debug("Retrieved %d job references", len(self._all_job_refs))
         return list(self._all_job_refs)
 
-    def add(self, func: SlurmFunction, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def add(self, func: SlurmFunction, *args: Any, **kwargs: Any) -> None:
         """
         You can also add a task using `add` instead of `distribute`.
 
@@ -229,7 +232,7 @@ class JobBundling(Dispatcher):
 
     def _dispatch(
         self,
-        funcs: typing.Iterable[FunctionCall],
+        funcs: Iterable[FunctionCall],
         options: SlurmOptions,
         entry_point: Path,
         block: bool = False,
@@ -260,8 +263,8 @@ class JobBundling(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: typing.Optional[dict[str, typing.Any]] = None,
-        simple_slurm_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+        conf: dict[str, Any] | None = None,
+        simple_slurm_kwargs: dict[str, Any] | None = None,
     ) -> JobReference:
         """
         Execute command with srun (bypasses bundling).
@@ -281,8 +284,8 @@ class JobBundling(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: typing.Optional[dict[str, typing.Any]] = None,
-        simple_slurm_kwargs: typing.Optional[dict[str, typing.Any]] = None,
+        conf: dict[str, Any] | None = None,
+        simple_slurm_kwargs: dict[str, Any] | None = None,
     ) -> JobReference:
         """
         Execute command with sbatch (bypasses bundling).
@@ -299,7 +302,7 @@ class JobBundling(Dispatcher):
         options = SlurmOptions(**(conf if conf else {}))
         return self.subdispatcher.sbatch(command, options, simple_slurm_kwargs)
 
-    def __enter__(self) -> "JobBundling":
+    def __enter__(self) -> JobBundling:
         """
         Enter context manager - activate bundling dispatcher.
 
@@ -313,9 +316,9 @@ class JobBundling(Dispatcher):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[type[BaseException]],
-        exc_val: typing.Optional[BaseException],
-        exc_tb: typing.Optional[typing.Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
         """
         Exit context manager - flush buffered tasks and restore previous dispatcher.
@@ -388,7 +391,7 @@ class Batch(JobBundling):
         Use :class:`JobBundling` instead. This alias will be removed in a future version.
     """
 
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """
         Initialize Batch (deprecated alias for JobBundling).
 

@@ -2,21 +2,23 @@
 This file saves the default configuration for slurm.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
-import typing
 from pathlib import Path
+from typing import Any
 
 CONFIG_NAME = ".slurminade_default.json"
 
 # Module-level logger for consistent logging
 _logger = logging.getLogger("slurminade.conf")
 
-__default_conf: dict[str, typing.Any] = {}
+__default_conf: dict[str, Any] = {}
 
 
-def _load_conf(path: Path) -> dict[str, typing.Any]:
+def _load_conf(path: Path) -> dict[str, Any]:
     """
     Load configuration from a JSON file.
 
@@ -44,7 +46,7 @@ def _load_conf(path: Path) -> dict[str, typing.Any]:
 
 
 def update_default_configuration(
-    conf: typing.Optional[dict[str, typing.Any]] = None, **kwargs: typing.Any
+    conf: dict[str, Any] | None = None, **kwargs: Any
 ) -> None:
     """
     Adds or updates the default configuration.
@@ -86,7 +88,7 @@ _load_default_conf()
 
 
 def set_default_configuration(
-    conf: typing.Optional[dict[str, typing.Any]] = None, **kwargs: typing.Any
+    conf: dict[str, Any] | None = None, **kwargs: Any
 ) -> None:
     """
     Replaces the default configuration.
@@ -104,8 +106,8 @@ def set_default_configuration(
 
 
 def _get_conf(
-    conf: typing.Optional[dict[str, typing.Any]] = None
-) -> dict[str, typing.Any]:
+    conf: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Get merged configuration (default + override).
 

@@ -11,8 +11,9 @@ You can disable these security mechanisms by
 ``disable_warning_for_multiple_flushes``.
 """
 
+from __future__ import annotations
+
 import logging
-import typing
 
 # Module-level logger for security and guard operations
 _logger = logging.getLogger("slurminade.guard")
@@ -114,7 +115,7 @@ class _DispatchGuard:
         remaining_calls: Number of remaining allowed calls
     """
 
-    def __init__(self, max_calls: typing.Optional[int]) -> None:
+    def __init__(self, max_calls: int | None) -> None:
         """
         Initialize the dispatch guard.
 
@@ -125,7 +126,7 @@ class _DispatchGuard:
         self.remaining_calls = max_calls
         _logger.debug("Created DispatchGuard with max_calls=%s", max_calls)
 
-    def __call__(self) -> typing.Optional[int]:
+    def __call__(self) -> int | None:
         """
         Check and decrement the dispatch counter.
 
@@ -144,7 +145,7 @@ class _DispatchGuard:
         _logger.debug("Dispatch guard: %d/%d calls remaining", self.remaining_calls, self.max_calls)
         return self.remaining_calls
 
-    def set_limit(self, n: typing.Optional[int]) -> None:
+    def set_limit(self, n: int | None) -> None:
         """
         Set a new dispatch limit.
 
@@ -159,7 +160,7 @@ class _DispatchGuard:
 dispatch_guard = _DispatchGuard(100)
 
 
-def set_dispatch_limit(n: typing.Optional[int]) -> None:
+def set_dispatch_limit(n: int | None) -> None:
     """
     Set a limit to the number of dispatches.
 

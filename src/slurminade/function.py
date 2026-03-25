@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import subprocess
-import typing
+from collections.abc import Callable, Iterable
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap, get_entry_point
@@ -44,8 +47,8 @@ class SlurmFunction:
 
     def __init__(
         self,
-        special_slurm_opts: dict[str, typing.Any],
-        func: typing.Callable[..., typing.Any],
+        special_slurm_opts: dict[str, Any],
+        func: Callable[..., Any],
         func_id: str,
         call_policy: CallPolicy = CallPolicy.LOCALLY,
     ) -> None:
@@ -65,7 +68,7 @@ class SlurmFunction:
         self.defining_file = Path(inspect.getfile(func))
         _logger.debug("Created SlurmFunction for %s with policy %s", func_id, call_policy)
 
-    def update_options(self, conf: dict[str, typing.Any]) -> None:
+    def update_options(self, conf: dict[str, Any]) -> None:
         """
         Update Slurm options for this function.
 
@@ -77,9 +80,9 @@ class SlurmFunction:
 
     def wait_for(
         self,
-        job_ids: typing.Union[JobReference, typing.Iterable[JobReference]],
+        job_ids: JobReference | Iterable[JobReference],
         method: str = "afterany",
-    ) -> "SlurmFunction":
+    ) -> SlurmFunction:
         """
         Add a dependency to a distribution.
         `f_jid = f.wait_for(job_ids).distribute("hello")`
@@ -113,7 +116,7 @@ class SlurmFunction:
         )
         return sfunc
 
-    def with_options(self, **kwargs) -> "SlurmFunction":
+    def with_options(self, **kwargs: Any) -> SlurmFunction:
         """
         Add slurm options to the function.
         :param kwargs: The slurm options.
@@ -123,7 +126,7 @@ class SlurmFunction:
         sfunc.update_options(kwargs)
         return sfunc
 
-    def _check(self, args: tuple[typing.Any, ...], kwargs: dict[str, typing.Any]) -> None:
+    def _check(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
         """
         Check if the arguments match the function signature.
 
@@ -136,7 +139,7 @@ class SlurmFunction:
         """
         inspect.signature(self.func).bind(*args, **kwargs)
 
-    def __call__(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """
         Direct call of the original function.
 
@@ -172,7 +175,7 @@ class SlurmFunction:
             )
             return self.defining_file
 
-    def distribute(self, *args: typing.Any, **kwargs: typing.Any) -> JobReference:
+    def distribute(self, *args: Any, **kwargs: Any) -> JobReference:
         """
         Try to distribute function call. If slurm is not available, a direct function
         call will be performed.
@@ -194,7 +197,7 @@ class SlurmFunction:
             block=False,
         )
 
-    def distribute_and_wait(self, *args: typing.Any, **kwargs: typing.Any) -> JobReference:
+    def distribute_and_wait(self, *args: Any, **kwargs: Any) -> JobReference:
         """
         Distribute the function and wait for it to finish.
 
@@ -215,7 +218,7 @@ class SlurmFunction:
             block=True,
         )
 
-    def run_locally(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def run_locally(self, *args: Any, **kwargs: Any) -> Any:
         """
         Call the function locally (not distributed).
 
@@ -233,7 +236,7 @@ class SlurmFunction:
         return self.func.__name__
 
     @staticmethod
-    def call(func_id: str, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+    def call(func_id: str, *args: Any, **kwargs: Any) -> Any:
         """
         Call a slurmified function by its ID.
 
@@ -250,7 +253,7 @@ class SlurmFunction:
 
 def slurmify(
     f=None, **args
-) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+) -> Callable[[Callable], SlurmFunction] | SlurmFunction:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -270,7 +273,7 @@ def slurmify(
         func_id = FunctionMap.register(f)
         return SlurmFunction({}, f, func_id)
 
-    def dec(func) -> SlurmFunction:
+    def dec(func: Callable) -> SlurmFunction:
         func_id = FunctionMap.register(func)
         return SlurmFunction(args, func, func_id)
 
@@ -279,7 +282,7 @@ def slurmify(
 
 def _slurmify(
     allow_overwrite: bool, **args
-) -> typing.Union[typing.Callable[[typing.Callable], SlurmFunction], SlurmFunction]:
+) -> Callable[[Callable], SlurmFunction] | SlurmFunction:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -295,7 +298,7 @@ def _slurmify(
     :return: A decorated function, callable with slurm.
     """
 
-    def dec(func) -> SlurmFunction:
+    def dec(func: Callable) -> SlurmFunction:
         func_id = FunctionMap.register(func, allow_overwrite=allow_overwrite)
         return SlurmFunction(args, func, func_id)
 
@@ -303,7 +306,7 @@ def _slurmify(
 
 
 @_slurmify(allow_overwrite=True)
-def shell(cmd: typing.Union[str, list[str]]):
+def shell(cmd: str | list[str]) -> None:
     """
     Execute a command.
     :param cmd: The command to be executed. Can be a string (will use shell=True)
