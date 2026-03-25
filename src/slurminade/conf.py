@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from .options import SlurmOptions
+
 CONFIG_NAME = ".slurminade_default.json"
 
 # Module-level logger for consistent logging
@@ -56,11 +58,11 @@ def update_default_configuration(
         **kwargs: Configuration parameters (alternative to giving a dictionary)
     """
     if conf:
-        _logger.info("Updating configuration with %d keys from dict", len(conf))
+        _logger.debug("Updating configuration with %d keys from dict", len(conf))
         _logger.debug("Configuration update: %s", conf)
         __default_conf.update(conf)
     if kwargs:
-        _logger.info("Updating configuration with %d keys from kwargs", len(kwargs))
+        _logger.debug("Updating configuration with %d keys from kwargs", len(kwargs))
         _logger.debug("Configuration update: %s", kwargs)
         __default_conf.update(kwargs)
 
@@ -81,7 +83,7 @@ def _load_default_conf() -> None:
     # Try current directory
     update_default_configuration(_load_conf(Path(CONFIG_NAME)))
 
-    _logger.info("Default configuration loaded with %d keys", len(__default_conf))
+    _logger.debug("Default configuration loaded with %d keys", len(__default_conf))
 
 
 _load_default_conf()
@@ -100,13 +102,13 @@ def set_default_configuration(
         **kwargs: Configuration parameters (alternative to giving a dictionary)
     """
     global __default_conf  # noqa: PLW0603
-    _logger.info("Resetting default configuration")
+    _logger.debug("Resetting default configuration")
     __default_conf = {}
     update_default_configuration(conf, **kwargs)
 
 
 def _get_conf(
-    conf: dict[str, Any] | None = None
+    conf: SlurmOptions | dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Get merged configuration (default + override).
@@ -117,7 +119,12 @@ def _get_conf(
     Returns:
         Merged configuration dictionary
     """
-    conf = conf if conf else {}
+    if conf is None:
+        override: dict[str, Any] = {}
+    elif isinstance(conf, SlurmOptions):
+        override = conf.as_dict()
+    else:
+        override = conf
     conf_ = __default_conf.copy()
-    conf_.update(conf)
+    conf_.update(override)
     return conf_

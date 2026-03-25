@@ -6,7 +6,7 @@ import subprocess
 from collections.abc import Callable, Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, overload
 
 from .dispatcher import FunctionCall, dispatch, get_dispatcher
 from .function_map import FunctionMap, get_entry_point
@@ -47,7 +47,7 @@ class SlurmFunction:
 
     def __init__(
         self,
-        special_slurm_opts: dict[str, Any],
+        special_slurm_opts: SlurmOptions | dict[str, Any],
         func: Callable[..., Any],
         func_id: str,
         call_policy: CallPolicy = CallPolicy.LOCALLY,
@@ -61,7 +61,7 @@ class SlurmFunction:
             func_id: Unique identifier for this function
             call_policy: How to call this function (locally, distributed, etc.)
         """
-        self.special_slurm_opts = SlurmOptions(**special_slurm_opts)
+        self.special_slurm_opts = special_slurm_opts if isinstance(special_slurm_opts, SlurmOptions) else SlurmOptions(**special_slurm_opts)
         self.func = func
         self.func_id = func_id
         self.call_policy = call_policy
@@ -111,8 +111,9 @@ class SlurmFunction:
         ):
             msg = "Invalid job id. Not every dispatcher can directly return job ids, because it may not directly distribute them or doesn't distribute them at all."
             raise RuntimeError(msg)
+        resolved_ids = [jid.get_job_id() for jid in job_ids]
         sfunc.special_slurm_opts.add_dependencies(
-            [jid.get_job_id() for jid in job_ids], method
+            [x for x in resolved_ids if x is not None], method
         )
         return sfunc
 
@@ -233,7 +234,7 @@ class SlurmFunction:
         return self.func(*args, **kwargs)
 
     def __str__(self) -> str:
-        return self.func.__name__
+        return getattr(self.func, "__name__", repr(self.func))
 
     @staticmethod
     def call(func_id: str, *args: Any, **kwargs: Any) -> Any:
@@ -251,9 +252,15 @@ class SlurmFunction:
         return FunctionMap.call(func_id, args, kwargs)
 
 
+@overload
+def slurmify(f: Callable[..., Any], /) -> SlurmFunction: ...
+
+@overload
+def slurmify(f: None = None, /, **args: Any) -> Callable[[Callable[..., Any]], SlurmFunction]: ...
+
 def slurmify(
-    f=None, **args
-) -> Callable[[Callable], SlurmFunction] | SlurmFunction:
+    f: Callable[..., Any] | None = None, /, **args: Any,
+) -> Callable[[Callable[..., Any]], SlurmFunction] | SlurmFunction:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -273,7 +280,7 @@ def slurmify(
         func_id = FunctionMap.register(f)
         return SlurmFunction({}, f, func_id)
 
-    def dec(func: Callable) -> SlurmFunction:
+    def dec(func: Callable[..., Any]) -> SlurmFunction:
         func_id = FunctionMap.register(func)
         return SlurmFunction(args, func, func_id)
 
@@ -281,8 +288,8 @@ def slurmify(
 
 
 def _slurmify(
-    allow_overwrite: bool, **args
-) -> Callable[[Callable], SlurmFunction] | SlurmFunction:
+    allow_overwrite: bool, **args: Any,
+) -> Callable[[Callable[..., Any]], SlurmFunction]:
     """
     Decorator: Make a function distributable to slurm.
     Usage:
@@ -298,7 +305,7 @@ def _slurmify(
     :return: A decorated function, callable with slurm.
     """
 
-    def dec(func: Callable) -> SlurmFunction:
+    def dec(func: Callable[..., Any]) -> SlurmFunction:
         func_id = FunctionMap.register(func, allow_overwrite=allow_overwrite)
         return SlurmFunction(args, func, func_id)
 

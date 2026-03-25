@@ -56,9 +56,8 @@ xdg-open htmlcov/index.html  # Linux
 
 We use several tools to maintain code quality:
 
-- **Ruff**: Fast Python linter
-- **Black**: Code formatting
-- **mypy**: Static type checking
+- **Ruff**: Linting and code formatting (via `ruff format`)
+- **ty**: Static type checking (by Astral, the ruff team)
 - **pytest**: Testing framework
 
 Run linting:
@@ -68,7 +67,7 @@ ruff check src tests
 
 Run type checking:
 ```bash
-mypy src tests
+ty check src tests
 ```
 
 Format code:

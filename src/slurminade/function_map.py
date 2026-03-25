@@ -49,7 +49,7 @@ class FunctionMap:
                 raise RuntimeError(msg)
             file = FunctionMap.entry_point
         path = Path(file).resolve()
-        return f"{path}:{func.__name__}"
+        return f"{path}:{getattr(func, '__name__', repr(func))}"
 
     @staticmethod
     def get_readable_name(func_id: str) -> str:
@@ -62,9 +62,10 @@ class FunctionMap:
         :param func: The function to be checked.
         :return: None
         """
+        name = getattr(func, "__name__", "")
         if (
-            not func.__name__
-            or func.__name__ == "<lambda>"
+            not name
+            or name == "<lambda>"
             or not inspect.getfile(func)
         ):
             msg = "Can only slurmify proper functions."
@@ -91,7 +92,7 @@ class FunctionMap:
             raise RuntimeError(msg)
 
         FunctionMap._data[func_id] = func
-        _logger.info("Registered slurmified function: %s", func_id)
+        _logger.debug("Registered slurmified function: %s", func_id)
         _logger.debug("Total registered functions: %d", len(FunctionMap._data))
         return func_id
 

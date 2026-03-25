@@ -50,16 +50,17 @@ def node_setup(func: Callable[[], None]) -> Callable[[], None]:
             import os
             os.environ['MY_VAR'] = 'value'
     """
+    name = getattr(func, "__name__", repr(func))
     if on_slurm_node() and not _no_setup:
-        _logger.info("Executing node setup function: %s", func.__name__)
+        _logger.info("Executing node setup function: %s", name)
         func()
-        _logger.debug("Node setup completed: %s", func.__name__)
+        _logger.debug("Node setup completed: %s", name)
     else:
         # check if the function has no arguments
         sig = inspect.signature(func)
         if sig.parameters:
-            _logger.error("Node setup function %s has parameters", func.__name__)
+            _logger.error("Node setup function %s has parameters", name)
             msg = "The node setup function must not have any arguments."
             raise ValueError(msg)
-        _logger.debug("Registered node setup function: %s", func.__name__)
+        _logger.debug("Registered node setup function: %s", name)
     return func

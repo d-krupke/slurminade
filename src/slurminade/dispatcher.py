@@ -189,7 +189,7 @@ class TestDispatcher(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()
@@ -200,7 +200,7 @@ class TestDispatcher(Dispatcher):
     def sbatch(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> JobReference:
         dispatch_guard()
@@ -213,12 +213,12 @@ class TestDispatcher(Dispatcher):
 
 
 class SlurmJobReference(JobReference):
-    def __init__(self, job_id, exit_code, mode: str):
+    def __init__(self, job_id: int | None, exit_code: int | None, mode: str):
         self.job_id = job_id
         self.exit_code = exit_code
         self.mode = mode
 
-    def get_job_id(self) -> int:
+    def get_job_id(self) -> int | None:
         return self.job_id
 
     def get_exit_code(self) -> int | None:
@@ -277,24 +277,24 @@ class SlurmDispatcher(Dispatcher):
         command = create_slurminade_command(entry_point, funcs, self.max_arg_length)
         logging.getLogger("slurminade").debug(command)
         if block:
-            ret = slurm.srun(command)
+            ret = slurm.srun(" ".join(shlex.quote(c) for c in command))
             logging.getLogger("slurminade").info(
                 "Returned from srun with exit code %s", ret
             )
             return SlurmJobReference(None, ret, "srun")
-        jid = slurm.sbatch(command)
+        jid = slurm.sbatch(*command)
         self._all_job_ids.append(jid)
         return SlurmJobReference(jid, None, "sbatch")
 
     def sbatch(
         self,
         command: str,
-        conf: dict | None = None,
+        conf: SlurmOptions | None = None,
         simple_slurm_kwargs: dict | None = None,
     ) -> SlurmJobReference:
         dispatch_guard()
-        conf = _get_conf(conf)
-        slurm = simple_slurm.Slurm(**conf)
+        conf_ = _get_conf(conf)
+        slurm = simple_slurm.Slurm(**conf_)
         logging.getLogger("slurminade").debug("SBATCH %s", command)
         if simple_slurm_kwargs:
             jid = slurm.sbatch(command, **simple_slurm_kwargs)
@@ -311,12 +311,12 @@ class SlurmDispatcher(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: dict | None = None,
+        conf: SlurmOptions | None = None,
         simple_slurm_kwargs: dict | None = None,
     ) -> SlurmJobReference:
         dispatch_guard()
-        conf = _get_conf(conf)
-        slurm = simple_slurm.Slurm(**conf)
+        conf_ = _get_conf(conf)
+        slurm = simple_slurm.Slurm(**conf_)
         logging.getLogger("slurminade").debug("SRUN %s", command)
         if simple_slurm_kwargs:
             ret = slurm.srun(command, **simple_slurm_kwargs)
@@ -367,18 +367,18 @@ class SubprocessDispatcher(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> SubprocessJobReference:
         dispatch_guard()
         logging.getLogger("slurminade").debug("SRUN %s", command)
-        subprocess.run(command, check=True)
+        subprocess.run(command, shell=True, check=True)
         return SubprocessJobReference()
 
     def sbatch(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> SubprocessJobReference:
         return self.srun(command)
@@ -420,17 +420,17 @@ class DirectCallDispatcher(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> LocalJobReference:
         dispatch_guard()
-        subprocess.run(command, check=True)
+        subprocess.run(command, shell=True, check=True)
         return LocalJobReference()
 
     def sbatch(
         self,
         command: str,
-        conf: dict | None = None,  # noqa: ARG002
+        conf: SlurmOptions | None = None,  # noqa: ARG002
         simple_slurm_kwargs: dict | None = None,  # noqa: ARG002
     ) -> LocalJobReference:
         return self.srun(command)
@@ -456,7 +456,7 @@ def get_dispatcher() -> Dispatcher:
         _logger.debug("No dispatcher set, creating default dispatcher")
         try:
             __dispatcher = SlurmDispatcher()
-            _logger.info("Using SlurmDispatcher (Slurm environment detected)")
+            _logger.debug("Using SlurmDispatcher (Slurm environment detected)")
         except RuntimeError as re:
             _logger.warning("Slurm environment not found: %s", re)
             _logger.warning("Using DirectCallDispatcher (local execution)")
@@ -471,7 +471,7 @@ def set_dispatcher(dispatcher: Dispatcher) -> None:
     :return: None
     """
     global __dispatcher  # noqa: PLW0603
-    _logger.info(
+    _logger.debug(
         "Setting dispatcher to %s", dispatcher.__class__.__name__
     )
     __dispatcher = dispatcher

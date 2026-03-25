@@ -138,7 +138,7 @@ class _DispatchGuard:
         """
         if not self.max_calls:
             return None
-        if self.remaining_calls <= 0:
+        if self.remaining_calls is None or self.remaining_calls <= 0:
             _logger.error("Dispatch limit of %d exceeded", self.max_calls)
             raise TooManyDispatchesError(self.max_calls)
         self.remaining_calls -= 1

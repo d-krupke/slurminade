@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added coverage upload to Codecov
   - Updated actions to v4/v5 (latest versions)
 - Updated pre-commit hooks to latest versions:
-  - black: 23.3.0 → 24.10.0
+  - Removed black (replaced by ruff-format)
   - ruff: v0.5.1 → v0.8.4
   - mypy: v1.3.0 → v1.13.0
   - prettier: v3.0.0-alpha.9 → v3.3.3

@@ -145,7 +145,7 @@ class JobBundling(Dispatcher):
         self.subdispatcher = get_dispatcher()
         self._tasks = TaskBuffer()
         self._all_job_refs: list[JobReference] = []
-        _logger.info(
+        _logger.debug(
             "Created JobBundling with max_size=%d, dispatcher=%s",
             max_size,
             self.subdispatcher.__class__.__name__,
@@ -263,7 +263,7 @@ class JobBundling(Dispatcher):
     def srun(
         self,
         command: str,
-        conf: dict[str, Any] | None = None,
+        conf: SlurmOptions | None = None,
         simple_slurm_kwargs: dict[str, Any] | None = None,
     ) -> JobReference:
         """
@@ -278,13 +278,12 @@ class JobBundling(Dispatcher):
             JobReference for the srun job
         """
         _logger.debug("Executing srun command (bypassing bundling): %s", command[:50])
-        options = SlurmOptions(**(conf if conf else {}))
-        return self.subdispatcher.srun(command, options, simple_slurm_kwargs)
+        return self.subdispatcher.srun(command, conf, simple_slurm_kwargs)
 
     def sbatch(
         self,
         command: str,
-        conf: dict[str, Any] | None = None,
+        conf: SlurmOptions | None = None,
         simple_slurm_kwargs: dict[str, Any] | None = None,
     ) -> JobReference:
         """
@@ -299,8 +298,7 @@ class JobBundling(Dispatcher):
             JobReference for the sbatch job
         """
         _logger.debug("Executing sbatch command (bypassing bundling): %s", command[:50])
-        options = SlurmOptions(**(conf if conf else {}))
-        return self.subdispatcher.sbatch(command, options, simple_slurm_kwargs)
+        return self.subdispatcher.sbatch(command, conf, simple_slurm_kwargs)
 
     def __enter__(self) -> JobBundling:
         """
@@ -310,7 +308,7 @@ class JobBundling(Dispatcher):
             Self for use in with statement
         """
         self.subdispatcher = get_dispatcher()
-        _logger.info("Entering JobBundling context, activating bundling dispatcher")
+        _logger.debug("Entering JobBundling context, activating bundling dispatcher")
         set_dispatcher(self)
         return self
 
@@ -330,10 +328,9 @@ class JobBundling(Dispatcher):
         """
         try:
             if exc_type:
-                _logger.error("Exiting JobBundling context due to exception: %s", exc_type.__name__)
                 logging.getLogger("slurminade").error("Aborted due to exception.")
                 return
-            _logger.info("Exiting JobBundling context, flushing buffered tasks")
+            _logger.debug("Exiting JobBundling context, flushing buffered tasks")
             self.flush()
         finally:
             set_dispatcher(self.subdispatcher)
