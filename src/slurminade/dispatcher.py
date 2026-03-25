@@ -282,7 +282,7 @@ class SlurmDispatcher(Dispatcher):
                 "Returned from srun with exit code %s", ret
             )
             return SlurmJobReference(None, ret, "srun")
-        jid = slurm.sbatch(*command)
+        jid = slurm.sbatch(" ".join(shlex.quote(c) for c in command))
         self._all_job_ids.append(jid)
         return SlurmJobReference(jid, None, "sbatch")
 

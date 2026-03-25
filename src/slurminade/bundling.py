@@ -398,6 +398,3 @@ class Batch(JobBundling):
         """
         super().__init__(*args, **kwargs)
         _logger.warning("Batch class is deprecated, use JobBundling instead")
-        logging.getLogger("slurminade").warning(
-            "The `Batch` class has been renamed to `JobBundling`. Please update your code."
-        )
