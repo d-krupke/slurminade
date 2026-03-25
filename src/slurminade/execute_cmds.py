@@ -15,6 +15,16 @@ from tempfile import mkstemp
 from .function_call import FunctionCall
 
 
+def _python_cmd() -> str:
+    """Return the Python executable with optimization flags matching the current process."""
+    opt = sys.flags.optimize
+    if opt == 1:
+        return f"{sys.executable} -O"
+    if opt >= 2:
+        return f"{sys.executable} -OO"
+    return sys.executable
+
+
 def create_slurminade_command(
     entry_point: Path, funcs: typing.Iterable[FunctionCall], max_arg_length: int
 ) -> str:
@@ -32,7 +42,7 @@ def create_slurminade_command(
         raise FileNotFoundError(msg)
 
     command = (
-        f"{sys.executable} -m slurminade.execute --root {shlex.quote(str(entry_point))}"
+        f"{_python_cmd()} -m slurminade.execute --root {shlex.quote(str(entry_point))}"
     )
 
     # Serialize function calls as JSON
@@ -56,6 +66,7 @@ def create_slurminade_command(
 def call_slurminade_to_get_function_ids(entry_point: Path) -> typing.Set[str]:
     cmd = [
         sys.executable,
+        *(["-O"] if sys.flags.optimize == 1 else ["-OO"] if sys.flags.optimize >= 2 else []),
         "-m",
         "slurminade.execute",
         "--root",

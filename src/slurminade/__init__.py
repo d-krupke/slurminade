@@ -61,7 +61,6 @@ import sys
 # Set up the root logger to print to stdout by default
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
-# flake8: noqa F401
 from .bundling import Batch, JobBundling
 from .conf import set_default_configuration, update_default_configuration
 from .dispatcher import (

@@ -18,7 +18,6 @@ _exec_flag = False
 
 
 def on_slurm_node():
-    global _exec_flag  # noqa: PLW0602
     return _exec_flag
 
 
